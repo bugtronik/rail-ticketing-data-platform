@@ -8,6 +8,8 @@ dependencies = []
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.2",
+    "pymysql>=1.2.3",
+    "pytest>=9.1.1",
     "ruff>=0.16.10",
     "sqlfluff>=4.4.0",
 ]
@@ -32,3 +34,12 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 # pytest relies on plain `assert` statements.
 "tests/**" = ["S101"]
+
+# --- Pytest -------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Fail on typos in marker names instead of silently ignoring them.
+addopts = "--strict-markers"
+markers = [
+	"integration: needs the MariaDB container running (docker compose up -d mariadb)",
+]
