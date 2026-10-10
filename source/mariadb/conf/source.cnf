@@ -1,0 +1,13 @@
+# Server settings for the MariaDB source, mounted into /etc/mysql/conf.d/.
+# MariaDB ignores world-writable config files: keep the repository on the
+# WSL filesystem (~/...), not under /mnt/c/.
+[mariadb]
+# Every DATETIME written by CURRENT_TIMESTAMP is UTC. Conversion to the
+# network's local time happens in the warehouse (dbt), where it is explicit.
+default-time-zone = +00:00
+
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# Small footprint for a laptop: ~2-3 million tickets fit comfortably.
+innodb_buffer_pool_size = 256M
