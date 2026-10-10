@@ -9,7 +9,7 @@ load factor, cancellations and sales channels **without querying production**.
 
 All data is synthetic, produced by the project's own generator.
 
-> 🚧 **Work in progress** — current milestone: **J0, repository foundations**.
+> 🚧 **Work in progress** — current milestone: **J1, MariaDB source schema**.
 
 ## Target architecture
 
@@ -42,7 +42,7 @@ flowchart LR
 ## Roadmap
 
 - [x] **J0** — Repository foundations, tooling, CI lint
-- [ ] **J1** — MariaDB source schema
+- [x] **J1** — MariaDB source schema
 - [ ] **J2** — Synthetic data generator
 - [ ] **J3** — Incremental extraction to PostgreSQL
 - [ ] **J4** — dbt dimensional model and tests
@@ -58,14 +58,41 @@ Each significant choice is recorded as an Architecture Decision Record:
 
 - [ADR 0001 — Batch incremental ingestion first, CDC later](docs/adr/0001-batch-incremental-ingestion.md)
 - [ADR 0002 — Python tooling: uv, Ruff, SQLFluff, pre-commit](docs/adr/0002-python-tooling.md)
+- [ADR 0003 — Source schema designed for incremental extraction](docs/adr/0003-source-schema-design.md)
 
-## Development setup
+## Getting started
 
-Requirements: [uv](https://docs.astral.sh/uv/), `make`, Docker (from J1).
+Requirements: Docker (Desktop with WSL2 on Windows), [uv](https://docs.astral.sh/uv/), `make`.
 
 ```bash
-make install   # create the virtualenv from uv.lock, install git hooks
-make lint      # run all checks, exactly as the CI does
+cp .env.example .env   # then change the passwords
+make install           # virtualenv from uv.lock + git hooks
+make up                # start the stack, wait until healthy
+make test              # run the test suite against it
+```
+
+Other commands: `make help`. `make reset` deletes the data volumes, so the
+database is rebuilt from `source/mariadb/init/` on the next `make up`.
+
+## Source data model
+
+Simulated production database (MariaDB, normalised). Every table also has
+`created_at` / `updated_at`, maintained by the database.
+
+```mermaid
+erDiagram
+    rail_lines ||--o{ line_stops : "has ordered"
+    stations ||--o{ line_stops : "appears in"
+    rail_lines ||--o{ trips : "runs"
+    trains ||--o{ trips : "operates"
+    customers |o--o{ orders : "places"
+    sales_channels ||--o{ orders : "sells"
+    orders ||--|{ tickets : "contains"
+    trips ||--o{ tickets : "carries"
+    stations ||--o{ tickets : "origin / destination"
+    orders ||--o{ payments : "paid by"
+    tickets ||--o{ refunds : "refunded by"
+    payments ||--o{ refunds : "credited to"
 ```
 
 ## License
