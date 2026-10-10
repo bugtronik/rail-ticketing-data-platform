@@ -18,7 +18,7 @@ services:
       ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:?set it in .env}
     ports:
       # Bound to localhost only: not reachable from the rest of the network.
-      - "127.0.0.1:${MARIADB_PORT:-3306}:3306"
+      - "${MARIADB_BIND_ADDRESS:-127.0.0.1}:${MARIADB_PORT:-3306}:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
       - ./source/mariadb/conf:/etc/mysql/conf.d:ro
