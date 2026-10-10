@@ -1,0 +1,11 @@
+# Normalise line endings to LF in the repository.
+# The project is edited from Windows (VS Code, Notepad) and from WSL2/Linux:
+# without this file, CRLF endings can break shell scripts in containers
+# and create noisy diffs.
+* text=auto eol=lf
+
+# Binary files: never touch them.
+*.png binary
+*.jpg binary
+*.gif binary
+*.pdf binary
