@@ -1,0 +1,42 @@
+# Local stack, started with `make up`. Services are added milestone by milestone.
+# Every credential comes from .env (git-ignored); ${VAR:?} makes Compose stop
+# with an explicit error if a variable is missing, instead of starting with
+# an empty password.
+name: rail-ticketing
+
+services:
+  # Simulated production database (OLTP) of the fictional rail operator.
+  mariadb:
+    # 12.3 is the current LTS series; patch releases (12.3.x) are picked up
+    # automatically, minor/major upgrades are a deliberate change.
+    image: mariadb:12.3
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set it in .env}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-ticketing}
+      # Read by source/mariadb/init/02_users.sh at first start.
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set it in .env}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:?set it in .env}
+    ports:
+      # Bound to localhost only: not reachable from the rest of the network.
+      - "127.0.0.1:${MARIADB_PORT:-3306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./source/mariadb/conf:/etc/mysql/conf.d:ro
+      # Init scripts run once, on an EMPTY data volume (see `make reset`).
+      - ./source/mariadb/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Script shipped with the official image: healthy = accepts connections
+      # AND InnoDB is ready. `docker compose up --wait` relies on it.
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
