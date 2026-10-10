@@ -1,0 +1,9 @@
+# Dependabot opens a pulls request when a pinned GitHub Action has a new release, updating both the commit SHA and the version comment.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
