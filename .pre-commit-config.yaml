@@ -1,0 +1,36 @@
+# Pre-commit hooks: run automatically on `git commit`, and in CI on every push
+# (`pre-commit run --all-files`). One definition of "clean code" for both.
+repos:
+  # Generic hygiene checks maintained by the pre-commit project.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+      # Blocks accidental commits of data dumps or binary reports (> 1 MB).
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+
+  # Ruff and SQLFluff run from the project's own virtualenv (via `uv run`),
+  # so their versions come from uv.lock: no second version to keep in sync.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+      - id: sqlfluff-lint
+        name: sqlfluff lint
+        entry: uv run sqlfluff lint
+        language: system
+        types: [sql]
