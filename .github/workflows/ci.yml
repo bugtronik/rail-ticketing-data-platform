@@ -23,11 +23,11 @@ jobs:
       # Actions are pinned to a full commit SHA, not a tag: a tag can be moved
       # to malicious code, a commit SHA cannot. The comment keeps it readable,
       # and Dependabot (.github/dependabot.yml) proposes updates.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
 
@@ -39,3 +39,36 @@ jobs:
       # Same command as `make lint` locally.
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  source-db:
+    name: Source DB integration tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+
+      # The example values are fine here: the database lives only for the
+      # duration of this job, on a throwaway runner.
+      - name: Create .env from the example
+        run: cp .env.example .env
+
+      # Same docker-compose.yml as on a developer machine: CI tests the real
+      # setup, init scripts included. --wait blocks until the healthcheck passes.
+      - name: Start MariaDB
+        run: docker compose up -d --wait mariadb
+
+      - name: Install dev dependencies
+        run: uv sync --locked
+
+      - name: Run integration tests
+        run: uv run --env-file .env pytest -m integration -v
+
+      - name: Show MariaDB logs on failure
+        if: failure()
+        run: docker compose logs mariadb
