@@ -178,6 +178,9 @@ CREATE TABLE orders (
     PRIMARY KEY (order_id),
     UNIQUE KEY uq_orders_reference (order_reference),
     KEY ix_orders_updated_at (updated_at, order_id),
+    -- The application polls its rare PENDING orders: without this index, each
+    -- poll scans every order ever made.
+    KEY ix_orders_status (order_status, ordered_at),
     CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers (customer_id),
     CONSTRAINT fk_orders_channel FOREIGN KEY (channel_id) REFERENCES sales_channels (channel_id),
     CONSTRAINT ck_orders_amount CHECK (total_amount >= 0)
@@ -233,6 +236,7 @@ CREATE TABLE payments (
     ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (payment_id),
     KEY ix_payments_updated_at (updated_at, payment_id),
+    KEY ix_payments_status (payment_status, attempted_at),  -- PENDING payments queue
     CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders (order_id),
     CONSTRAINT ck_payments_amount CHECK (amount > 0)
 ) ENGINE = InnoDB;
@@ -255,6 +259,7 @@ CREATE TABLE refunds (
     ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (refund_id),
     KEY ix_refunds_updated_at (updated_at, refund_id),
+    KEY ix_refunds_status (refund_status, requested_at),  -- refunds awaiting processing
     CONSTRAINT fk_refunds_ticket FOREIGN KEY (ticket_id) REFERENCES tickets (ticket_id),
     CONSTRAINT fk_refunds_payment FOREIGN KEY (payment_id) REFERENCES payments (payment_id),
     CONSTRAINT ck_refunds_amount CHECK (amount > 0)
