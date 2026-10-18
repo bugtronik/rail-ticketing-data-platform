@@ -9,7 +9,7 @@ load factor, cancellations and sales channels **without querying production**.
 
 All data is synthetic, produced by the project's own generator.
 
-> 🚧 **Work in progress** — current milestone: **J1, MariaDB source schema**.
+> 🚧 **Work in progress** — current milestone: **J2, synthetic data generator**.
 
 ## Target architecture
 
@@ -43,7 +43,7 @@ flowchart LR
 
 - [x] **J0** — Repository foundations, tooling, CI lint
 - [x] **J1** — MariaDB source schema
-- [ ] **J2** — Synthetic data generator
+- [x] **J2** — Synthetic data generator
 - [ ] **J3** — Incremental extraction to PostgreSQL
 - [ ] **J4** — dbt dimensional model and tests
 - [ ] **J5** — Airflow orchestration, full `docker compose up` (MVP)
@@ -59,6 +59,7 @@ Each significant choice is recorded as an Architecture Decision Record:
 - [ADR 0001 — Batch incremental ingestion first, CDC later](docs/adr/0001-batch-incremental-ingestion.md)
 - [ADR 0002 — Python tooling: uv, Ruff, SQLFluff, pre-commit](docs/adr/0002-python-tooling.md)
 - [ADR 0003 — Source schema designed for incremental extraction](docs/adr/0003-source-schema-design.md)
+- [ADR 0004 — Synthetic data generator: history and live modes](docs/adr/0004-synthetic-data-generator.md)
 
 ## Getting started
 
@@ -69,10 +70,36 @@ cp .env.example .env   # then change the passwords
 make install           # virtualenv from uv.lock + git hooks
 make up                # start the stack, wait until healthy
 make test              # run the test suite against it
+make seed              # fill the source with 2 years of history (~8-15 min)
+make live              # then simulate the production application (Ctrl+C to stop)
 ```
 
 Other commands: `make help`. `make reset` deletes the data volumes, so the
 database is rebuilt from `source/mariadb/init/` on the next `make up`.
+
+## Synthetic data
+
+The generator (`src/rail_ticketing/generator/`) simulates a **fictional**
+long-distance corridor: 19 stations over ~650 km, express, stopping and night
+trains, prices in XAF. Every business assumption lives in
+[`config/generator.toml`](config/generator.toml); one seed makes the whole
+dataset reproducible.
+
+What the data contains, by design: yearly seasonality (school holidays,
+year-end), busy Fridays and Sundays, morning and evening rushes at the
+counters, a two-year shift from counters to web and mobile, trains that sell
+out at peak times (capacity checked segment by segment), payment failures,
+cancellations that are not always refunded, cancelled trips, delay claims.
+
+Measured on a full run (2 years of history):
+
+| | |
+|---|---|
+| Rows written | 6.0 million (2.5 M tickets, 1.6 M orders, 1.7 M payments) |
+| Duration | ~8 min (≈12,000 rows/s, batched inserts) |
+| Memory peak | 86 MB (streamed day by day) |
+| Average load factor | 47-56 % depending on the line (≈40 % in February, >70 % in August) |
+| Live mode | one tick every 30 s, ~0.05 s of database work per tick |
 
 ## Source data model
 
