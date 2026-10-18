@@ -4,11 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from rail_ticketing.generator.config import (
-    DEFAULT_CONFIG_PATH,
-    ConfigError,
-    load_config,
-)
+from rail_ticketing.generator.config import DEFAULT_CONFIG_PATH, ConfigError, load_config
 
 
 def test_default_configuration_is_valid() -> None:
@@ -20,11 +16,7 @@ def test_default_configuration_is_valid() -> None:
 @pytest.mark.parametrize(
     ("original", "broken", "message"),
     [
-        (
-            "CASH = 0.60, MOBILE_MONEY = 0.30",
-            "CASH = 0.70, MOBILE_MONEY = 0.30",
-            "sum to 1",
-        ),
+        ("CASH = 0.60, MOBILE_MONEY = 0.30", "CASH = 0.70, MOBILE_MONEY = 0.30", "sum to 1"),
         ('stops = ["POCEA", "PESTU"', 'stops = ["POCEA", "XXXXX"', "unknown station"),
         ('departure = "07:00"', 'departure = "7h00"', "Invalid isoformat"),
     ],

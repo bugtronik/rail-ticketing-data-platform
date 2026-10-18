@@ -9,11 +9,13 @@ dependencies = [
     "pymysql>=1.2.3",
 ]
 
+# Command installed in the virtualenv: `rail-generator history|live`.
 [project.scripts]
 rail-generator = "rail_ticketing.generator.cli:main"
 
+# Makes the project an installable package (code lives in src/rail_ticketing/).
 [build-system]
-requires = ["uv_build<=0.13,<0.14"]
+requires = ["uv_build>=0.13,<0.14"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -28,13 +30,28 @@ dev = [
 ]
 
 # --- Ruff: Python linter + formatter -----------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes: unused imports, undefined names...
+    "I",   # isort: import ordering
+    "B",   # flake8-bugbear: likely bugs (mutable default args...)
+    "UP",  # pyupgrade: modern Python syntax
+    "SIM", # flake8-simplify
+    "S",   # flake8-bandit: security, incl. hardcoded passwords (S105/S106)
+]
+
 [tool.ruff.lint.per-file-ignores]
 # pytest relies on plain `assert` statements (S101); tests use `random` (S311, see below).
 "tests/**" = ["S101", "S311"]
 # S311 warns that `random` is not cryptographically secure. Right in general,
 # irrelevant for a simulation: the generator needs speed and reproducibility.
 "src/rail_ticketing/generator/**" = ["S311"]
-
 
 # --- Pytest -------------------------------------------------------------------
 [tool.pytest.ini_options]

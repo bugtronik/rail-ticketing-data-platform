@@ -67,17 +67,13 @@ def load_customer_picker(conn: Connection) -> CustomerPicker:
 
 
 class LiveSimulator:
-    def __init__(
-        self, cfg: GeneratorConfig, conn: Connection, rng: random.Random
-    ) -> None:
+    def __init__(self, cfg: GeneratorConfig, conn: Connection, rng: random.Random) -> None:
         self.cfg, self.conn, self.rng = cfg, conn, rng
         self.tz = ZoneInfo(cfg.timezone)
         today = datetime.now(self.tz).date()
         self.demand = DemandModel(cfg, today - timedelta(days=cfg.history_days), today)
         self.ref = load_reference(conn)
-        self.sales = SalesSimulator(
-            cfg, rng, self.demand, self.ref, load_customer_picker(conn)
-        )
+        self.sales = SalesSimulator(cfg, rng, self.demand, self.ref, load_customer_picker(conn))
         self.published_until: date | None = None
 
     def _poisson(self, per_hour: float, elapsed: timedelta) -> int:
@@ -94,12 +90,8 @@ class LiveSimulator:
         done: Counter[str] = Counter()
         with self.conn.cursor() as cur:
             done["trips_published"] = self._publish_trips(cur, now)
-            done["trips_completed"], done["tickets_used"] = self._complete_trips(
-                cur, now
-            )
-            done["payments_settled"], done["orders_abandoned"] = self._settle_payments(
-                cur, now
-            )
+            done["trips_completed"], done["tickets_used"] = self._complete_trips(cur, now)
+            done["payments_settled"], done["orders_abandoned"] = self._settle_payments(cur, now)
             done["orders"] = self._sell(cur, now, elapsed)
             done["tickets_cancelled"] = self._cancel_tickets(cur, now, elapsed)
             done["refunds_progressed"] = self._progress_refunds(cur, now)
@@ -198,8 +190,7 @@ class LiveSimulator:
         abandoned = [row[0] for row in cur.fetchall()]
         for order_id in abandoned:
             cur.execute(
-                "UPDATE orders SET order_status = 'CANCELLED' WHERE order_id = %s",
-                (order_id,),
+                "UPDATE orders SET order_status = 'CANCELLED' WHERE order_id = %s", (order_id,)
             )
             cur.execute(
                 "UPDATE tickets SET ticket_status = 'CANCELLED', cancelled_at = %s "
@@ -245,10 +236,7 @@ class LiveSimulator:
         local_now = now.replace(tzinfo=UTC).astimezone(self.tz)
         # More orders at busy hours: weight of the current hour in the daily profile.
         hour_weight = np.mean(
-            [
-                np.array(p)[local_now.hour] / np.mean(p)
-                for p in self.cfg.hour_profiles.values()
-            ]
+            [np.array(p)[local_now.hour] / np.mean(p) for p in self.cfg.hour_profiles.values()]
         )
         n_orders = self._poisson(self.cfg.live.orders_per_hour * hour_weight, elapsed)
         if n_orders == 0:
@@ -290,9 +278,9 @@ class LiveSimulator:
             try:
                 return insert_one(self.conn, "orders", order, ("order_id", *AUDIT))
             except pymysql.IntegrityError as exc:
-                duplicate_reference = exc.args[
-                    0
-                ] == DUPLICATE_KEY and "uq_orders_reference" in str(exc)
+                duplicate_reference = exc.args[0] == DUPLICATE_KEY and "uq_orders_reference" in str(
+                    exc
+                )
                 if not duplicate_reference:
                     raise
                 order.order_reference = self.sales.order_reference()
@@ -331,12 +319,7 @@ class LiveSimulator:
                 cur.execute(
                     "INSERT INTO refunds (ticket_id, payment_id, amount, reason, requested_at) "
                     "VALUES (%s, %s, %s, 'CUSTOMER_REQUEST', %s)",
-                    (
-                        ticket_id,
-                        payment_id,
-                        self.sales.money(float(price) * share),
-                        now,
-                    ),
+                    (ticket_id, payment_id, self.sales.money(float(price) * share), now),
                 )
         return len(picks)
 
@@ -390,9 +373,7 @@ class LiveSimulator:
         return n
 
 
-def run_live(
-    cfg: GeneratorConfig, conn: Connection, max_ticks: int | None = None
-) -> None:
+def run_live(cfg: GeneratorConfig, conn: Connection, max_ticks: int | None = None) -> None:
     """Run ticks forever (or `max_ticks` times), every `live.tick_seconds`."""
     simulator = LiveSimulator(cfg, conn, random.Random())
     interval = timedelta(seconds=cfg.live.tick_seconds)

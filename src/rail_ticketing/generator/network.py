@@ -66,9 +66,7 @@ def build_reference_data(cfg: GeneratorConfig, created_at: datetime) -> Referenc
             )
 
     trains = [
-        TrainRow(
-            i, t.code, t.model, t.seats_first, t.seats_second, created_at, created_at
-        )
+        TrainRow(i, t.code, t.model, t.seats_first, t.seats_second, created_at, created_at)
         for i, t in enumerate(cfg.trains, start=1)
     ]
     channels = [
@@ -125,12 +123,8 @@ def plan_day(cfg: GeneratorConfig, day: date) -> list[PlannedTrip]:
         if service.months and day.month not in service.months:
             continue
         line = cfg.line(service.line)
-        for direction, number in zip(
-            ("OUTBOUND", "RETURN"), service.numbers, strict=True
-        ):
-            stops = (
-                line.stops if direction == "OUTBOUND" else tuple(reversed(line.stops))
-            )
+        for direction, number in zip(("OUTBOUND", "RETURN"), service.numbers, strict=True):
+            stops = line.stops if direction == "OUTBOUND" else tuple(reversed(line.stops))
             kms = [cfg.station(code).km for code in stops]
             # Rotate the fleet day after day, so every train unit is used.
             k = trips_per_line.get(line.code, 0)

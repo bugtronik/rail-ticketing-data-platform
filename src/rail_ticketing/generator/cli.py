@@ -23,9 +23,7 @@ def _history(args: argparse.Namespace) -> int:
     if not db.source_is_empty(conn):
         # History mode assigns ids itself (1, 2, 3...): it needs an empty source.
         # The app account cannot DELETE, so cleaning is done by recreating the volume.
-        log.error(
-            "The source database already contains data. Run `make reset && make up`."
-        )
+        log.error("The source database already contains data. Run `make reset && make up`.")
         return 1
     stats = generate_history(cfg, db.MariaDBWriter(conn), days=args.days)
     total = sum(stats.rows.values())
@@ -64,24 +62,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    history = commands.add_parser(
-        "history", help="fill an empty source with the history"
-    )
-    history.add_argument(
-        "--days", type=int, help="override history_days (shorter runs)"
-    )
+    history = commands.add_parser("history", help="fill an empty source with the history")
+    history.add_argument("--days", type=int, help="override history_days (shorter runs)")
     history.set_defaults(run=_history)
 
     live = commands.add_parser("live", help="simulate the application in real time")
-    live.add_argument(
-        "--ticks", type=int, help="stop after N ticks (default: run forever)"
-    )
+    live.add_argument("--ticks", type=int, help="stop after N ticks (default: run forever)")
     live.set_defaults(run=_live)
 
     args = parser.parse_args(argv)
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     return args.run(args)
 
 

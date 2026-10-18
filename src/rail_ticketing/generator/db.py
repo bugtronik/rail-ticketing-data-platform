@@ -19,9 +19,7 @@ def connect() -> Connection:
     """Connection settings come from the environment (see .env.example)."""
     password = os.environ.get("APP_DB_PASSWORD")
     if not password:
-        raise RuntimeError(
-            "APP_DB_PASSWORD is not set: run through `make`, which loads .env"
-        )
+        raise RuntimeError("APP_DB_PASSWORD is not set: run through `make`, which loads .env")
     return pymysql.connect(
         host=os.environ.get("MARIADB_HOST", "127.0.0.1"),
         port=int(os.environ.get("MARIADB_PORT", "3306")),
@@ -56,15 +54,13 @@ class MariaDBWriter:
         columns = [f.name for f in fields(rows[0])]
         # Table and column names come from our own dataclasses, never from input.
         sql = (
-            f"INSERT INTO {table} ({', '.join(columns)}) "
+            f"INSERT INTO {table} ({', '.join(columns)}) "  # noqa: S608
             f"VALUES ({', '.join(['%s'] * len(columns))})"
         )
         values = attrgetter(*columns)  # fast tuple extraction from slotted dataclasses
         with self.conn.cursor() as cur:
             for start in range(0, len(rows), self.batch_size):
-                cur.executemany(
-                    sql, [values(row) for row in rows[start : start + self.batch_size]]
-                )
+                cur.executemany(sql, [values(row) for row in rows[start : start + self.batch_size]])
 
     def commit(self) -> None:
         self.conn.commit()
@@ -75,7 +71,7 @@ def insert_one(conn: Connection, table: str, row: object, skip: tuple[str, ...])
     AUTO_INCREMENT id, created_at, updated_at). Returns the new id."""
     columns = [f.name for f in fields(row) if f.name not in skip]  # type: ignore[arg-type]
     sql = (
-        f"INSERT INTO {table} ({', '.join(columns)}) "
+        f"INSERT INTO {table} ({', '.join(columns)}) "  # noqa: S608
         f"VALUES ({', '.join(['%s'] * len(columns))})"
     )
     with conn.cursor() as cur:

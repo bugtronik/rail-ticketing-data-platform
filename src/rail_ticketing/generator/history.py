@@ -18,11 +18,7 @@ from rail_ticketing.generator.config import GeneratorConfig
 from rail_ticketing.generator.customers import CustomerPicker, build_customers
 from rail_ticketing.generator.demand import DemandModel
 from rail_ticketing.generator.network import build_reference_data, plan_day
-from rail_ticketing.generator.sales import (
-    OrderBundle,
-    SalesSimulator,
-    reference_from_id,
-)
+from rail_ticketing.generator.sales import OrderBundle, SalesSimulator, reference_from_id
 
 log = logging.getLogger(__name__)
 
@@ -113,9 +109,7 @@ def generate_history(
         stats.rows[table] += len(rows)
 
     # Reference data existed before the period we simulate.
-    reference = build_reference_data(
-        cfg, created_at=history_start - timedelta(days=365)
-    )
+    reference = build_reference_data(cfg, created_at=history_start - timedelta(days=365))
     write("stations", reference.stations)
     write("rail_lines", reference.lines)
     write("line_stops", reference.line_stops)
@@ -148,11 +142,7 @@ def generate_history(
         write("refunds", [r for b in bundles for r, _, _ in b.refunds])
         writer.commit()  # one transaction per day of departures
         if day.day == 1:
-            log.info(
-                "%s done, %d tickets so far",
-                day.strftime("%Y-%m"),
-                stats.rows["tickets"],
-            )
+            log.info("%s done, %d tickets so far", day.strftime("%Y-%m"), stats.rows["tickets"])
         day += timedelta(days=1)
 
     stats.seconds = time.perf_counter() - started

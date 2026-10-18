@@ -34,9 +34,7 @@ def seeded(
 ) -> tuple[Connection, HistoryStats, datetime]:
     conn = connect_as("app")
     if not source_is_empty(conn):
-        pytest.skip(
-            "the source already holds data (after `make seed`); CI runs this test"
-        )
+        pytest.skip("the source already holds data (after `make seed`); CI runs this test")
     now = datetime.now(UTC).replace(tzinfo=None)
     stats = generate_history(config, UncommittedWriter(conn), now=now, days=7)
     return conn, stats, now
@@ -52,13 +50,13 @@ def test_history_rows_are_all_in_the_database(seeded) -> None:
     conn, stats, _ = seeded
     for table, expected in stats.rows.items():
         # Table names come from the generator's own list, not from input.
-        assert _count(conn, f"SELECT COUNT(*) FROM {table}") == expected, table
+        assert _count(conn, f"SELECT COUNT(*) FROM {table}") == expected, table  # noqa: S608
 
 
 def test_history_never_writes_in_the_future(seeded) -> None:
     conn, _, now = seeded
     for table in ("trips", "orders", "tickets", "payments", "refunds"):
-        sql = f"SELECT COUNT(*) FROM {table} WHERE updated_at > %s"
+        sql = f"SELECT COUNT(*) FROM {table} WHERE updated_at > %s"  # noqa: S608
         assert _count(conn, sql, now) == 0, table
 
 
@@ -66,9 +64,7 @@ def test_live_tick_writes_new_changes_that_a_watermark_can_see(
     seeded, config: GeneratorConfig
 ) -> None:
     conn, _, history_now = seeded
-    busy = dataclasses.replace(
-        config, live=dataclasses.replace(config.live, orders_per_hour=2000)
-    )
+    busy = dataclasses.replace(config, live=dataclasses.replace(config.live, orders_per_hour=2000))
     simulator = LiveSimulator(busy, conn, random.Random(1))
 
     done = simulator.tick(datetime.now(UTC).replace(tzinfo=None), timedelta(hours=1))
@@ -93,9 +89,7 @@ def test_publishing_the_timetable_twice_creates_no_duplicate(
     assert _count(conn, "SELECT COUNT(*) FROM trips") == trips_before
 
 
-def test_live_retries_when_a_booking_reference_is_taken(
-    seeded, config: GeneratorConfig
-) -> None:
+def test_live_retries_when_a_booking_reference_is_taken(seeded, config: GeneratorConfig) -> None:
     conn, _, _ = seeded
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM orders ORDER BY order_id LIMIT 1")

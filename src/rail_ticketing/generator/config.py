@@ -173,12 +173,7 @@ def _build(raw: dict[str, Any]) -> GeneratorConfig:
         booking_horizon_days=raw["booking_horizon_days"],
         stations=tuple(Station(**s) for s in raw["stations"]),
         lines=tuple(
-            Line(
-                **(
-                    line
-                    | {"stops": tuple(line["stops"]), "fleet": tuple(line["fleet"])}
-                )
-            )
+            Line(**(line | {"stops": tuple(line["stops"]), "fleet": tuple(line["fleet"])}))
             for line in raw["lines"]
         ),
         services=tuple(
@@ -200,9 +195,7 @@ def _build(raw: dict[str, Any]) -> GeneratorConfig:
                 | {
                     "month_factors": tuple(raw["demand"]["month_factors"]),
                     "weekday_factors": tuple(raw["demand"]["weekday_factors"]),
-                    "group_sizes": {
-                        int(k): v for k, v in raw["demand"]["group_sizes"].items()
-                    },
+                    "group_sizes": {int(k): v for k, v in raw["demand"]["group_sizes"].items()},
                 }
             )
         ),
@@ -232,38 +225,25 @@ def _validate(cfg: GeneratorConfig) -> None:
     line_codes = {line.code for line in cfg.lines}
 
     _check(len(station_codes) == len(cfg.stations), "stations: duplicate code")
-    _check(
-        all(len(code) == 5 for code in station_codes), "stations: codes must be 5 chars"
-    )
+    _check(all(len(code) == 5 for code in station_codes), "stations: codes must be 5 chars")
     for line in cfg.lines:
         _check(set(line.stops) <= station_codes, f"line {line.code}: unknown station")
         kms = [cfg.station(code).km for code in line.stops]
         _check(kms == sorted(kms), f"line {line.code}: stops must be ordered by km")
-        _check(
-            set(line.fleet) <= train_codes, f"line {line.code}: unknown train in fleet"
-        )
+        _check(set(line.fleet) <= train_codes, f"line {line.code}: unknown train in fleet")
     for service in cfg.services:
         _check(service.line in line_codes, f"service {service.numbers}: unknown line")
 
-    _check_distribution(
-        "channels share_start", {c.code: c.share_start for c in cfg.channels}
-    )
-    _check_distribution(
-        "channels share_end", {c.code: c.share_end for c in cfg.channels}
-    )
+    _check_distribution("channels share_start", {c.code: c.share_start for c in cfg.channels})
+    _check_distribution("channels share_end", {c.code: c.share_end for c in cfg.channels})
     for channel in cfg.channels:
-        _check(
-            channel.hour_profile in cfg.hour_profiles,
-            f"{channel.code}: unknown profile",
-        )
+        _check(channel.hour_profile in cfg.hour_profiles, f"{channel.code}: unknown profile")
         _check_distribution(f"{channel.code} payment_methods", channel.payment_methods)
     for name, profile in cfg.hour_profiles.items():
         _check(len(profile) == 24, f"hour profile {name}: needs 24 values")
 
     _check(len(cfg.demand.month_factors) == 12, "demand.month_factors: needs 12 values")
-    _check(
-        len(cfg.demand.weekday_factors) == 7, "demand.weekday_factors: needs 7 values"
-    )
+    _check(len(cfg.demand.weekday_factors) == 7, "demand.weekday_factors: needs 7 values")
     _check_distribution("demand.group_sizes", cfg.demand.group_sizes)
     _check_distribution("demand.passenger_types", cfg.demand.passenger_types)
     _check_distribution("pricing.fare_type_shares", cfg.pricing.fare_type_shares)

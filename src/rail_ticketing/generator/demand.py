@@ -38,9 +38,7 @@ class Categorical:
 class DemandModel:
     """Precomputed distributions, built once from the configuration."""
 
-    def __init__(
-        self, cfg: GeneratorConfig, history_start: date, history_end: date
-    ) -> None:
+    def __init__(self, cfg: GeneratorConfig, history_start: date, history_end: date) -> None:
         self.cfg = cfg
         self.history_start = history_start
         self.history_days = max((history_end - history_start).days, 1)
@@ -51,9 +49,7 @@ class DemandModel:
         self.group_sizes = Categorical(cfg.demand.group_sizes)
         self.passenger_types = Categorical(cfg.demand.passenger_types)
         self.fare_types = Categorical(cfg.pricing.fare_type_shares)
-        self.payment_methods = {
-            c.code: Categorical(c.payment_methods) for c in cfg.channels
-        }
+        self.payment_methods = {c.code: Categorical(c.payment_methods) for c in cfg.channels}
         self._channels = {c.code: c for c in cfg.channels}
         self._channels_by_day: dict[date, Categorical] = {}
         self._pairs: dict[tuple[str, ...], Categorical] = {}
@@ -78,9 +74,7 @@ class DemandModel:
 
     def channel_shares(self, day: date) -> dict[str, float]:
         """Market share of each channel on a date: linear move from start to end."""
-        progress = min(
-            max((day - self.history_start).days / self.history_days, 0.0), 1.0
-        )
+        progress = min(max((day - self.history_start).days / self.history_days, 0.0), 1.0)
         return {
             c.code: c.share_start + (c.share_end - c.share_start) * progress
             for c in self.cfg.channels
@@ -113,10 +107,6 @@ class DemandModel:
             weights = [self.cfg.station(code).weight for code in trip.stops]
             n = len(weights)
             self._pairs[trip.stops] = Categorical(
-                {
-                    (i, j): weights[i] * weights[j]
-                    for i in range(n)
-                    for j in range(i + 1, n)
-                }
+                {(i, j): weights[i] * weights[j] for i in range(n) for j in range(i + 1, n)}
             )
         return self._pairs[trip.stops].sample(rng)

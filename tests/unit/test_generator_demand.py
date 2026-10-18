@@ -20,9 +20,7 @@ def demand(config: GeneratorConfig) -> DemandModel:
 
 def test_holiday_months_have_more_demand_than_february(demand: DemandModel) -> None:
     # Same weekday (Tuesday), same year: only the month differs.
-    assert demand.seasonality(date(2025, 8, 5)) > 1.5 * demand.seasonality(
-        date(2025, 2, 4)
-    )
+    assert demand.seasonality(date(2025, 8, 5)) > 1.5 * demand.seasonality(date(2025, 2, 4))
     assert demand.seasonality(date(2025, 12, 2)) > demand.seasonality(date(2025, 2, 4))
 
 
@@ -43,21 +41,15 @@ def test_sales_move_online_over_time(demand: DemandModel) -> None:
 
     assert online_share(START) == pytest.approx(0.25)
     assert online_share(END) == pytest.approx(0.45)
-    assert sum(
-        demand.channel_shares(START + timedelta(days=200)).values()
-    ) == pytest.approx(1)
+    assert sum(demand.channel_shares(START + timedelta(days=200)).values()) == pytest.approx(1)
 
 
-def test_lead_times_follow_the_configuration(
-    config: GeneratorConfig, demand: DemandModel
-) -> None:
+def test_lead_times_follow_the_configuration(config: GeneratorConfig, demand: DemandModel) -> None:
     rng = random.Random(1)
     leads = np.array([demand.sample_lead_days(rng) for _ in range(20_000)])
     assert leads.min() >= 0
     assert leads.max() <= config.demand.max_lead_days
-    assert (leads <= 1).mean() == pytest.approx(
-        config.demand.last_minute_share, abs=0.02
-    )
+    assert (leads <= 1).mean() == pytest.approx(config.demand.last_minute_share, abs=0.02)
 
 
 def test_journeys_go_forward_along_the_line(demand: DemandModel) -> None:
@@ -70,12 +62,8 @@ def test_journeys_go_forward_along_the_line(demand: DemandModel) -> None:
 
 def test_big_stations_exchange_more_passengers(demand: DemandModel) -> None:
     rng = random.Random(3)
-    omnibus = next(
-        t for t in plan_day(demand.cfg, date(2025, 3, 4)) if t.line.code == "OMN"
-    )
+    omnibus = next(t for t in plan_day(demand.cfg, date(2025, 3, 4)) if t.line.code == "OMN")
     ends = [demand.sample_journey(rng, omnibus) for _ in range(20_000)]
-    terminus_to_terminus = sum(
-        1 for o, d in ends if o == 0 and d == len(omnibus.stops) - 1
-    )
+    terminus_to_terminus = sum(1 for o, d in ends if o == 0 and d == len(omnibus.stops) - 1)
     small_pair = sum(1 for o, d in ends if (o, d) == (4, 6))  # two weight-1 stations
     assert terminus_to_terminus > 10 * small_pair

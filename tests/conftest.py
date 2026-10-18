@@ -27,9 +27,7 @@ def require_env(name: str) -> str:
     """Return an environment variable, or stop the test run with a clear message."""
     value = os.environ.get(name)
     if not value:
-        pytest.fail(
-            f"{name} is not set. Run the tests with `make test`, which loads .env."
-        )
+        pytest.fail(f"{name} is not set. Run the tests with `make test`, which loads .env.")
     return value
 
 

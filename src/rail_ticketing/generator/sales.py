@@ -30,13 +30,7 @@ from rail_ticketing.generator.config import Channel, GeneratorConfig
 from rail_ticketing.generator.customers import CustomerPicker
 from rail_ticketing.generator.demand import DemandModel
 from rail_ticketing.generator.network import PlannedTrip, ReferenceData, to_utc
-from rail_ticketing.generator.rows import (
-    OrderRow,
-    PaymentRow,
-    RefundRow,
-    TicketRow,
-    TripRow,
-)
+from rail_ticketing.generator.rows import OrderRow, PaymentRow, RefundRow, TicketRow, TripRow
 
 ELECTRONIC_METHODS = {"CARD", "MOBILE_MONEY"}
 REFERENCE_ALPHABET = string.ascii_uppercase + string.digits
@@ -134,9 +128,7 @@ class SalesSimulator:
         """
         return "".join(self.rng.choices(REFERENCE_ALPHABET, k=10))
 
-    def price(
-        self, trip: PlannedTrip, request: _Request, passenger_type: str
-    ) -> Decimal:
+    def price(self, trip: PlannedTrip, request: _Request, passenger_type: str) -> Decimal:
         p = self.cfg.pricing
         km = trip.stop_km[request.destination] - trip.stop_km[request.origin]
         fare = max(p.minimum_fare, km * p.second_class_per_km)
@@ -157,15 +149,11 @@ class SalesSimulator:
         # before departure: if the drawn hour is too late on that day, the
         # customer bought one day earlier.
         lead_days = demand.sample_lead_days(rng)
-        channel = demand.sample_channel(
-            rng, (departure - timedelta(days=lead_days)).date()
-        )
+        channel = demand.sample_channel(rng, (departure - timedelta(days=lead_days)).date())
         while True:
             day = (departure - timedelta(days=lead_days)).date()
             hour = demand.sample_hour(rng, channel)
-            ordered = datetime.combine(
-                day, datetime.min.time(), tzinfo=departure.tzinfo
-            )
+            ordered = datetime.combine(day, datetime.min.time(), tzinfo=departure.tzinfo)
             ordered += timedelta(hours=hour) + self._seconds(0, 3600)
             if ordered <= departure - timedelta(minutes=30):
                 break
@@ -184,14 +172,7 @@ class SalesSimulator:
         if fare_type == "SAVER" and lead_days < self.cfg.pricing.saver_min_lead_days:
             fare_type = "STANDARD"  # SAVER fares are only sold in advance
         return _Request(
-            ordered_at,
-            channel,
-            seats,
-            origin,
-            destination,
-            fare_class,
-            fare_type,
-            lead_days,
+            ordered_at, channel, seats, origin, destination, fare_class, fare_type, lead_days
         )
 
     # --- Payment ------------------------------------------------------------------
@@ -223,25 +204,14 @@ class SalesSimulator:
             else:
                 status, settled_at, updated = "FAILED", None, outcome_at
             return PaymentRow(
-                None,
-                None,
-                method,
-                amount,
-                status,
-                reference,
-                at,
-                settled_at,
-                at,
-                updated,
+                None, None, method, amount, status, reference, at, settled_at, at, updated
             )
 
         # Every random draw is made up front, whatever `now` is: the random
         # sequence, hence the generated data, does not depend on the run date.
         method = methods.sample(rng)
         at = ordered_at + self._seconds(10, 120)
-        fails = (
-            method in ELECTRONIC_METHODS and rng.random() < life.payment_failure_rate
-        )
+        fails = method in ELECTRONIC_METHODS and rng.random() < life.payment_failure_rate
         retry_succeeds = rng.random() < life.payment_retry_success_rate
         retry_method, retry_at = methods.sample(rng), at + self._seconds(60, 600)
         abandoned_at = at + self._seconds(120, 900)
@@ -284,23 +254,12 @@ class SalesSimulator:
         else:
             status, processed, updated = "PAID", paid_at, paid_at
         return RefundRow(
-            None,
-            None,
-            None,
-            amount,
-            reason,
-            status,
-            requested_at,
-            processed,
-            requested_at,
-            updated,
+            None, None, None, amount, reason, status, requested_at, processed, requested_at, updated
         )
 
     # --- Steps 3 and 4: one trip -------------------------------------------------------
 
-    def simulate_trip(
-        self, trip: PlannedTrip, trip_id: int, now: datetime
-    ) -> TripOutcome:
+    def simulate_trip(self, trip: PlannedTrip, trip_id: int, now: datetime) -> TripOutcome:
         rng, life = self.rng, self.cfg.lifecycle
         departure, arrival = trip.departure_utc, trip.arrival_utc
 
@@ -312,9 +271,7 @@ class SalesSimulator:
         disrupted = rng.random() < life.disruption_rate
 
         # Step 2: requests, then step 3: replay them in time order.
-        seats_requested = int(
-            self.np_rng.poisson(self.demand.expected_seat_requests(trip))
-        )
+        seats_requested = int(self.np_rng.poisson(self.demand.expected_seat_requests(trip)))
         requests: list[_Request] = []
         seats_in_requests = 0  # running total: re-summing the list each time is O(n^2)
         while seats_in_requests < seats_requested:
@@ -344,9 +301,7 @@ class SalesSimulator:
                 continue
             used += request.seats
 
-            bundle, freed_at = self._sell(
-                trip, trip_id, request, cancelled_at, disrupted, now
-            )
+            bundle, freed_at = self._sell(trip, trip_id, request, cancelled_at, disrupted, now)
             bundles.append(bundle)
             for ticket, at in zip(bundle.tickets, freed_at, strict=True):
                 if at is not None:
@@ -370,8 +325,7 @@ class SalesSimulator:
             scheduled_departure_at=departure,
             scheduled_arrival_at=arrival,
             trip_status=status,
-            created_at=departure
-            - timedelta(days=90),  # timetable published 90 days ahead
+            created_at=departure - timedelta(days=90),  # timetable published 90 days ahead
             updated_at=updated,
         )
         return TripOutcome(trip_row, bundles, seats_requested, seats_lost)
@@ -393,16 +347,12 @@ class SalesSimulator:
 
         # Passengers: in a group, the first one is an adult.
         passenger_types = [
-            "ADULT"
-            if (i == 0 and request.seats > 1)
-            else demand.passenger_types.sample(rng)
+            "ADULT" if (i == 0 and request.seats > 1) else demand.passenger_types.sample(rng)
             for i in range(request.seats)
         ]
         prices = [self.price(trip, request, p) for p in passenger_types]
         total = sum(prices, Decimal(0))
-        payments, confirmed_at, failed_at = self._payments(
-            request.channel, ordered_at, total, now
-        )
+        payments, confirmed_at, failed_at = self._payments(request.channel, ordered_at, total, now)
         if failed_at and failed_at <= now:
             order_status, order_updated = "CANCELLED", failed_at
         elif confirmed_at:
@@ -429,9 +379,7 @@ class SalesSimulator:
                 order_id=None,
                 trip_id=trip_id,
                 origin_station_id=self.ref.station_ids[trip.stops[request.origin]],
-                destination_station_id=self.ref.station_ids[
-                    trip.stops[request.destination]
-                ],
+                destination_station_id=self.ref.station_ids[trip.stops[request.destination]],
                 fare_class=request.fare_class,
                 fare_type=request.fare_type,
                 passenger_type=passenger_type,
@@ -462,9 +410,7 @@ class SalesSimulator:
         departure, arrival = trip.departure_utc, trip.arrival_utc
         bundle = self.build_order(trip, trip_id, request, now)
         order = bundle.order
-        paid_with = next(
-            (p for p in bundle.payments if p.payment_status == "SUCCEEDED"), None
-        )
+        paid_with = next((p for p in bundle.payments if p.payment_status == "SUCCEEDED"), None)
         freed_at: list[datetime | None] = []
 
         for ticket in bundle.tickets:
@@ -477,10 +423,7 @@ class SalesSimulator:
             voluntary_at = None
             start = request.ordered_at + timedelta(minutes=10)
             end = departure - timedelta(hours=1)
-            if (
-                rng.random() < life.cancellation_rates[request.fare_type]
-                and start < end
-            ):
+            if rng.random() < life.cancellation_rates[request.fare_type] and start < end:
                 voluntary_at = start + self._seconds(0, (end - start).total_seconds())
 
             # The first event that happens decides the ticket's fate.
@@ -500,26 +443,16 @@ class SalesSimulator:
                 self._cancel(ticket, trip_cancelled_at)
                 freed_at.append(None)  # the train does not run: no resale
                 if paid_with:
-                    refund = self._refund(
-                        ticket.price, "TRIP_CANCELLED", trip_cancelled_at, now
-                    )
+                    refund = self._refund(ticket.price, "TRIP_CANCELLED", trip_cancelled_at, now)
                     bundle.refunds.append((refund, ticket, paid_with))
             elif arrival <= now and order.order_status == "CONFIRMED":
                 ticket.ticket_status, ticket.updated_at = "USED", arrival
                 freed_at.append(None)
-                if (
-                    disrupted
-                    and paid_with
-                    and rng.random() < life.disruption_claim_rate
-                ):
+                if disrupted and paid_with and rng.random() < life.disruption_claim_rate:
                     claimed_at = arrival + self._seconds(3600, 7 * 24 * 3600)
                     if claimed_at <= now:
-                        amount = self.money(
-                            float(ticket.price) * life.disruption_refund_share
-                        )
-                        refund = self._refund(
-                            amount, "SERVICE_DISRUPTION", claimed_at, now
-                        )
+                        amount = self.money(float(ticket.price) * life.disruption_refund_share)
+                        refund = self._refund(amount, "SERVICE_DISRUPTION", claimed_at, now)
                         bundle.refunds.append((refund, ticket, paid_with))
             else:
                 freed_at.append(None)
@@ -527,8 +460,4 @@ class SalesSimulator:
 
     @staticmethod
     def _cancel(ticket: TicketRow, at: datetime | None) -> None:
-        ticket.ticket_status, ticket.cancelled_at, ticket.updated_at = (
-            "CANCELLED",
-            at,
-            at,
-        )
+        ticket.ticket_status, ticket.cancelled_at, ticket.updated_at = "CANCELLED", at, at
