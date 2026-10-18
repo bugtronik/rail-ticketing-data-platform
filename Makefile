@@ -2,7 +2,7 @@
 # Every target is a thin wrapper: the real commands stay readable below.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lint format up down reset test
+.PHONY: help install lint format up down reset test seed live
 
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -31,3 +31,9 @@ reset: ## Stop the stack AND delete its data: init scripts re-run on next `up`
 
 test: ## Run the tests, with connection settings loaded from .env (needs `make up`)
 	uv run --env-file .env pytest
+
+seed: ## Fill the (empty) source with 2 years of history (needs `make up`)
+	uv run --env-file .env rail-generator history
+
+live: ## Simulate the production application in real time (Ctrl+C to stop)
+	uv run --env-file .env rail-generator live
