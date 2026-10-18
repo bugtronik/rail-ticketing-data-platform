@@ -40,8 +40,8 @@ jobs:
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
-  source-db:
-    name: Source DB integration tests
+  tests:
+    name: Tests (unit + integration)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -63,11 +63,12 @@ jobs:
       - name: Start MariaDB
         run: docker compose up -d --wait mariadb
 
-      - name: Install dev dependencies
+      - name: Install dependencies
         run: uv sync --locked
 
-      - name: Run integration tests
-        run: uv run --env-file .env pytest -m integration -v
+      # Unit tests need no database; integration tests use the MariaDB above.
+      - name: Run all tests
+        run: uv run --env-file .env pytest -v --durations=5
 
       - name: Show MariaDB logs on failure
         if: failure()
