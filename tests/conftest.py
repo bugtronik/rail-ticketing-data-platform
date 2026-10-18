@@ -1,15 +1,19 @@
-"""Shared pytest fixtures: connections to the MariaDB source.
+"""Shared pytest fixtures: generator configuration, connections to the MariaDB source.
 
 Connection settings come from environment variables (documented in
 .env.example). `make test` loads them from .env before running pytest.
 """
 
+import dataclasses
 import os
 from collections.abc import Callable, Iterator
+from datetime import datetime
 
 import pymysql
 import pytest
 from pymysql.connections import Connection
+
+from rail_ticketing.generator.config import GeneratorConfig, load_config
 
 # Database accounts created by source/mariadb/init/02_users.sh:
 # short name -> (user name, environment variable holding its password).
@@ -23,7 +27,9 @@ def require_env(name: str) -> str:
     """Return an environment variable, or stop the test run with a clear message."""
     value = os.environ.get(name)
     if not value:
-        pytest.fail(f"{name} is not set. Run the tests with `make test`, which loads .env.")
+        pytest.fail(
+            f"{name} is not set. Run the tests with `make test`, which loads .env."
+        )
     return value
 
 
@@ -64,3 +70,23 @@ def app_conn(connect_as: Callable[[str], Connection]) -> Connection:
 def etl_conn(connect_as: Callable[[str], Connection]) -> Connection:
     """Connection as the read-only extraction account."""
     return connect_as("etl")
+
+
+# --- Generator ------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def now() -> datetime:
+    """A fixed "present": tests that use it are reproducible, whatever the real date."""
+    return datetime(2026, 3, 15, 12, 0)
+
+
+@pytest.fixture(scope="session")
+def config() -> GeneratorConfig:
+    """The real configuration, smaller where size does not matter, so tests run fast."""
+    cfg = load_config()
+    return dataclasses.replace(
+        cfg,
+        booking_horizon_days=14,
+        customers=dataclasses.replace(cfg.customers, count=3000),
+    )

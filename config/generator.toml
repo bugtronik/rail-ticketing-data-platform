@@ -1,0 +1,286 @@
+# =============================================================================
+# Synthetic data generator: configuration
+#
+# A FICTIONAL rail network. Its shape is inspired by a single long-distance
+# corridor in Central Africa (coast -> interior plateau, ~650 km, a few long
+# trains a day). Every name below is invented; no real company is modelled.
+#
+# Every business assumption of the generator lives in this file, not in the
+# code: change a rate here, re-run `make reset && make up && make seed`.
+# =============================================================================
+
+seed = 42                        # same seed + same config = same data
+currency = "XAF"
+timezone = "Africa/Libreville"   # local time of the network (the DB stores UTC)
+history_days = 730               # two years of history
+booking_horizon_days = 60        # trips are on sale up to 60 days ahead
+
+
+# --- Network ------------------------------------------------------------------
+# km = distance from the coastal terminus. weight = how much traffic a station
+# generates or attracts (population, activity). Codes are 5 characters.
+stations = [
+    { code = "POCEA", name = "Port-Océan", region = "Province Côtière", km = 0, weight = 10 },
+    { code = "CTNRD", name = "Cité-Nord", region = "Province Côtière", km = 14, weight = 4 },
+    { code = "LGBLE", name = "Lagune-Bleue", region = "Province Côtière", km = 41, weight = 2 },
+    { code = "PESTU", name = "Pont-de-l'Estuaire", region = "Province Côtière", km = 77, weight = 3 },
+    { code = "COLIN", name = "Collines", region = "Province du Fleuve", km = 112, weight = 1 },
+    { code = "RVNOI", name = "Rivière-Noire", region = "Province du Fleuve", km = 171, weight = 5 },
+    { code = "SABLI", name = "Sablière", region = "Province du Fleuve", km = 203, weight = 1 },
+    { code = "FDVRT", name = "Fonds-Vert", region = "Province du Fleuve", km = 239, weight = 1 },
+    { code = "CRPAL", name = "Carrefour-des-Palmiers", region = "Province Centrale", km = 272, weight = 2 },
+    { code = "FRHTE", name = "Forêt-Haute", region = "Province Centrale", km = 305, weight = 1 },
+    { code = "CREST", name = "Carrefour-Est", region = "Province Centrale", km = 338, weight = 5 },
+    { code = "BSRGE", name = "Bois-Rouge", region = "Province Centrale", km = 381, weight = 1 },
+    { code = "LCPIR", name = "Lac-aux-Pirogues", region = "Province Centrale", km = 419, weight = 2 },
+    { code = "SVGRS", name = "Savane-Grise", region = "Province des Plateaux", km = 457, weight = 4 },
+    { code = "CHUTE", name = "Les Chutes", region = "Province des Plateaux", km = 498, weight = 2 },
+    { code = "PLSUD", name = "Plateau-Sud", region = "Province des Plateaux", km = 536, weight = 2 },
+    { code = "MNHTE", name = "Mine-Haute", region = "Province des Plateaux", km = 579, weight = 6 },
+    { code = "TRRGE", name = "Terres-Rouges", region = "Province des Plateaux", km = 612, weight = 2 },
+    { code = "HTPLA", name = "Haut-Plateau", region = "Province des Plateaux", km = 648, weight = 8 },
+]
+
+# A "line" is a service pattern on the corridor: which stations it serves.
+# base_demand = seats requested per trip on an average day, before seasonality.
+# Requests beyond the remaining capacity are lost (sold-out trains).
+[[lines]]
+code = "EXP"
+name = "Express Océan - Haut-Plateau"
+stops = ["POCEA", "PESTU", "RVNOI", "CREST", "SVGRS", "MNHTE", "HTPLA"]
+travel_hours = 10.0
+base_demand = 500
+first_class_share = 0.20
+fleet = ["EXP-01", "EXP-02", "EXP-03", "EXP-04"]
+
+[[lines]]
+code = "OMN"
+name = "Omnibus Océan - Haut-Plateau"
+stops = [
+    "POCEA", "CTNRD", "LGBLE", "PESTU", "COLIN", "RVNOI", "SABLI", "FDVRT", "CRPAL", "FRHTE",
+    "CREST", "BSRGE", "LCPIR", "SVGRS", "CHUTE", "PLSUD", "MNHTE", "TRRGE", "HTPLA",
+]
+travel_hours = 13.5
+base_demand = 560
+first_class_share = 0.08
+fleet = ["OMN-01", "OMN-02", "OMN-03"]
+
+[[lines]]
+code = "NUI"
+name = "Train de nuit Océan - Haut-Plateau"
+stops = ["POCEA", "CTNRD", "PESTU", "RVNOI", "CRPAL", "CREST", "LCPIR", "SVGRS", "MNHTE", "HTPLA"]
+travel_hours = 12.5
+base_demand = 480
+first_class_share = 0.25
+fleet = ["NUI-01", "NUI-02", "NUI-03"]
+
+
+# --- Timetable ----------------------------------------------------------------
+# One entry = one daily service in each direction (outbound from the coast,
+# return from the plateau), at the same local departure time.
+# weekdays: 1 = Monday ... 7 = Sunday. months: empty = all year.
+[[services]]
+line = "EXP"
+numbers = ["E101", "E102"]
+departure = "07:00"
+weekdays = [1, 2, 3, 4, 5, 6, 7]
+months = []
+
+[[services]]
+line = "EXP"           # extra express on Fridays and Sundays in holiday months
+numbers = ["E103", "E104"]
+departure = "13:00"
+weekdays = [5, 7]
+months = [7, 8, 12]
+
+[[services]]
+line = "OMN"
+numbers = ["O201", "O202"]
+departure = "06:00"
+weekdays = [1, 2, 3, 4, 5, 6, 7]
+months = []
+
+[[services]]
+line = "NUI"
+numbers = ["N301", "N302"]
+departure = "20:00"
+weekdays = [1, 2, 3, 4, 5, 6, 7]
+months = []
+
+
+# --- Rolling stock ----------------------------------------------------------------
+# Written as [[trains]] tables: in TOML, a plain `key = value` placed after a
+# [[...]] header would belong to that table, not to the top level.
+[[trains]]
+code = "EXP-01"
+model = "Rame Express"
+seats_first = 60
+seats_second = 420
+
+[[trains]]
+code = "EXP-02"
+model = "Rame Express"
+seats_first = 60
+seats_second = 420
+
+[[trains]]
+code = "EXP-03"
+model = "Rame Express"
+seats_first = 60
+seats_second = 420
+
+[[trains]]
+code = "EXP-04"
+model = "Rame Express"
+seats_first = 60
+seats_second = 420
+
+[[trains]]
+code = "OMN-01"
+model = "Rame Omnibus"
+seats_first = 40
+seats_second = 520
+
+[[trains]]
+code = "OMN-02"
+model = "Rame Omnibus"
+seats_first = 40
+seats_second = 520
+
+[[trains]]
+code = "OMN-03"
+model = "Rame Omnibus"
+seats_first = 40
+seats_second = 520
+
+[[trains]]
+code = "NUI-01"
+model = "Rame Couchettes"
+seats_first = 80
+seats_second = 360
+
+[[trains]]
+code = "NUI-02"
+model = "Rame Couchettes"
+seats_first = 80
+seats_second = 360
+
+[[trains]]
+code = "NUI-03"
+model = "Rame Couchettes"
+seats_first = 80
+seats_second = 360
+
+
+# --- Sales channels -----------------------------------------------------------------
+# share_start / share_end: market share at the beginning and at the end of the
+# history (linear in between): sales move online over the two years.
+# identified_share: part of the orders linked to a customer account.
+# hour_profile: when this channel sells (see [hour_profiles]).
+[[channels]]
+code = "STATION_COUNTER"
+name = "Guichet en gare"
+is_online = false
+share_start = 0.55
+share_end = 0.40
+identified_share = 0.30
+hour_profile = "counter"
+payment_methods = { CASH = 0.60, MOBILE_MONEY = 0.30, CARD = 0.10 }
+
+[[channels]]
+code = "WEB"
+name = "Site web"
+is_online = true
+share_start = 0.15
+share_end = 0.20
+identified_share = 1.0
+hour_profile = "online"
+payment_methods = { CARD = 0.45, MOBILE_MONEY = 0.55 }
+
+[[channels]]
+code = "MOBILE_APP"
+name = "Application mobile"
+is_online = true
+share_start = 0.10
+share_end = 0.25
+identified_share = 1.0
+hour_profile = "online"
+payment_methods = { MOBILE_MONEY = 0.75, CARD = 0.25 }
+
+[[channels]]
+code = "PARTNER_AGENCY"
+name = "Agence partenaire"
+is_online = false
+share_start = 0.20
+share_end = 0.15
+identified_share = 0.50
+hour_profile = "counter"
+payment_methods = { CASH = 0.50, MOBILE_MONEY = 0.40, BANK_TRANSFER = 0.10 }
+
+# Relative weight of each local hour, 0h to 23h. Counters open 6h-19h with a
+# morning and an evening rush; online sales peak in the evening.
+[hour_profiles]
+counter = [0, 0, 0, 0, 0, 0, 3, 8, 9, 6, 5, 5, 4, 4, 4, 5, 7, 8, 5, 0, 0, 0, 0, 0]
+online = [1, 0.5, 0.3, 0.2, 0.3, 0.7, 2, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 5, 7, 8, 7, 4, 2]
+
+
+# --- Demand ---------------------------------------------------------------------
+[demand]
+annual_growth = 0.05
+# January ... December. July-August: school holidays; December: year-end.
+month_factors = [0.85, 0.80, 0.85, 0.95, 0.90, 0.95, 1.25, 1.35, 1.10, 0.90, 0.90, 1.30]
+# Monday ... Sunday. People travel on Friday and come back on Sunday.
+weekday_factors = [1.00, 0.85, 0.85, 0.90, 1.30, 1.00, 1.25]
+# Extra peaks on specific days ("MM-DD").
+special_days = { "08-16" = 1.4, "12-23" = 1.4, "12-24" = 1.3, "12-30" = 1.3, "01-02" = 1.3 }
+# Booking lead time: share of tickets bought on the day or the day before;
+# the others follow an exponential distribution with this mean.
+last_minute_share = 0.35
+lead_time_mean_days = 8
+max_lead_days = 60
+group_sizes = { "1" = 0.70, "2" = 0.15, "3" = 0.07, "4" = 0.05, "5" = 0.03 }
+passenger_types = { ADULT = 0.70, CHILD = 0.12, YOUTH = 0.10, SENIOR = 0.08 }
+
+
+# --- Pricing ---------------------------------------------------------------------
+[pricing]
+second_class_per_km = 38.0       # XAF per km
+minimum_fare = 1000
+rounding = 100                   # prices are rounded to 100 XAF
+first_class_multiplier = 1.6
+fare_type_shares = { FLEX = 0.20, STANDARD = 0.55, SAVER = 0.25 }
+fare_type_multipliers = { FLEX = 1.20, STANDARD = 1.00, SAVER = 0.75 }
+saver_min_lead_days = 3          # SAVER fares are sold at least 3 days ahead
+passenger_discounts = { ADULT = 0.00, CHILD = 0.50, YOUTH = 0.25, SENIOR = 0.30 }
+
+
+# --- Life cycle after the sale ---------------------------------------------------
+[lifecycle]
+# Voluntary cancellation by the customer, and the share of the price refunded.
+cancellation_rates = { FLEX = 0.10, STANDARD = 0.05, SAVER = 0.02 }
+refund_shares = { FLEX = 1.00, STANDARD = 0.50, SAVER = 0.00 }
+trip_cancellation_rate = 0.01    # cancelled trip: every ticket refunded in full
+disruption_rate = 0.03           # trips with a major delay...
+disruption_claim_rate = 0.30     # ...where 30% of passengers claim...
+disruption_refund_share = 0.25   # ...25% of their fare back
+refund_rejection_rate = 0.03
+payment_failure_rate = 0.06      # card and mobile money only
+payment_retry_success_rate = 0.60
+
+
+# --- Customers -------------------------------------------------------------------
+[customers]
+count = 60000
+existing_share = 0.60            # accounts created before the history starts
+profile_update_share = 0.15      # accounts edited once after creation
+loyalty_tiers = { NONE = 0.80, SILVER = 0.15, GOLD = 0.05 }
+
+
+# --- Live mode -------------------------------------------------------------------
+[live]
+tick_seconds = 30
+orders_per_hour = 240
+cancellations_per_hour = 12
+profile_updates_per_hour = 6
+refund_approval_minutes = 5      # REQUESTED -> APPROVED / REJECTED
+refund_payment_minutes = 15      # APPROVED -> PAID
