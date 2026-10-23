@@ -17,7 +17,7 @@ def test_default_configuration_is_valid() -> None:
     ("original", "broken", "message"),
     [
         ("CASH = 0.60, MOBILE_MONEY = 0.30", "CASH = 0.70, MOBILE_MONEY = 0.30", "sum to 1"),
-        ('stops = ["POCEA", "PESTU"', 'stops = ["POCEA", "XXXXX"', "unknown station"),
+        ('stops = ["PGENT", "LAMBA"', 'stops = ["PGENT", "XXXXX"', "unknown station"),
         ('departure = "07:00"', 'departure = "7h00"', "Invalid isoformat"),
     ],
     ids=["shares-not-summing-to-1", "unknown-station", "bad-time"],

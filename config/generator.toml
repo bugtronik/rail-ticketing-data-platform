@@ -1,9 +1,7 @@
 # =============================================================================
 # Synthetic data generator: configuration
 #
-# A FICTIONAL rail network. Its shape is inspired by a single long-distance
-# corridor in Central Africa (coast -> interior plateau, ~650 km, a few long
-# trains a day). Every name below is invented; no real company is modelled.
+# Station names are real Gabonese towns placed on a route that does not exist; no real railway line or company is modelled
 #
 # Every business assumption of the generator lives in this file, not in the
 # code: change a rate here, re-run `make reset && make up && make seed`.
@@ -20,25 +18,25 @@ booking_horizon_days = 60        # trips are on sale up to 60 days ahead
 # km = distance from the coastal terminus. weight = how much traffic a station
 # generates or attracts (population, activity). Codes are 5 characters.
 stations = [
-    { code = "POCEA", name = "Port-Gentil", region = "Ogooué-Maritime", km = 0, weight = 10 },
-    { code = "CTNRD", name = "Cap Lopez", region = "Ogooué-Maritime", km = 14, weight = 4 },
-    { code = "LGBLE", name = "Omboué", region = "Ogooué-Maritime", km = 41, weight = 2 },
-    { code = "PESTU", name = "Lambaréné", region = "Moyen-Ogooué", km = 77, weight = 3 },
-    { code = "COLIN", name = "Fougamou", region = "Ngounié", km = 112, weight = 1 },
-    { code = "RVNOI", name = "Mouila", region = "Ngounié", km = 171, weight = 5 },
-    { code = "SABLI", name = "Sindara", region = "Ngounié", km = 203, weight = 1 },
-    { code = "FDVRT", name = "Lébamba", region = "Ngounié", km = 239, weight = 1 },
-    { code = "CRPAL", name = "Ndendé", region = "Ngounié", km = 272, weight = 2 },
-    { code = "FRHTE", name = "Mbigou", region = "Mbigou", km = 305, weight = 1 },
-    { code = "CREST", name = "Koulamoutou", region = "Ogooué-Lolo", km = 338, weight = 5 },
-    { code = "BSRGE", name = "Ndzela", region = "Ogooué-Lolo", km = 381, weight = 1 },
-    { code = "LCPIR", name = "Mikouyi", region = "Ogooué-Lolo", km = 419, weight = 2 },
-    { code = "SVGRS", name = "Okondja", region = "Haut-Ogooué", km = 457, weight = 4 },
-    { code = "CHUTE", name = "Akiéni", region = "Haut-Ogooué", km = 498, weight = 2 },
-    { code = "PLSUD", name = "Bakoumba", region = "Haut-Ogooué", km = 536, weight = 2 },
-    { code = "MNHTE", name = "Bongoville", region = "Haut-Ogooué", km = 579, weight = 6 },
-    { code = "TRRGE", name = "Boumango", region = "Haut-Ogooué", km = 612, weight = 2 },
-    { code = "HTPLA", name = "Lékoni", region = "Haut-Ogooué", km = 648, weight = 8 },
+    { code = "PGENT", name = "Port-Gentil", region = "Ogooué-Maritime", km = 0, weight = 10 },
+    { code = "CLOPZ", name = "Cap Lopez", region = "Ogooué-Maritime", km = 14, weight = 4 },
+    { code = "OMBOU", name = "Omboué", region = "Ogooué-Maritime", km = 41, weight = 2 },
+    { code = "LAMBA", name = "Lambaréné", region = "Moyen-Ogooué", km = 77, weight = 3 },
+    { code = "FOUGA", name = "Fougamou", region = "Ngounié", km = 112, weight = 1 },
+    { code = "MOUIL", name = "Mouila", region = "Ngounié", km = 171, weight = 5 },
+    { code = "SINDA", name = "Sindara", region = "Ngounié", km = 203, weight = 1 },
+    { code = "LEBAM", name = "Lébamba", region = "Ngounié", km = 239, weight = 1 },
+    { code = "NDEND", name = "Ndendé", region = "Ngounié", km = 272, weight = 2 },
+    { code = "MBIGO", name = "Mbigou", region = "Ngounié", km = 305, weight = 1 },
+    { code = "KOULA", name = "Koulamoutou", region = "Ogooué-Lolo", km = 338, weight = 5 },
+    { code = "NDZEL", name = "Ndzela", region = "Ogooué-Lolo", km = 381, weight = 1 },
+    { code = "MIKOU", name = "Mikouyi", region = "Ogooué-Lolo", km = 419, weight = 2 },
+    { code = "OKOND", name = "Okondja", region = "Haut-Ogooué", km = 457, weight = 4 },
+    { code = "AKIEN", name = "Akiéni", region = "Haut-Ogooué", km = 498, weight = 2 },
+    { code = "BAKOU", name = "Bakoumba", region = "Haut-Ogooué", km = 536, weight = 2 },
+    { code = "BONGO", name = "Bongoville", region = "Haut-Ogooué", km = 579, weight = 6 },
+    { code = "BOUMA", name = "Boumango", region = "Haut-Ogooué", km = 612, weight = 2 },
+    { code = "LEKON", name = "Lékoni", region = "Haut-Ogooué", km = 648, weight = 8 },
 ]
 
 # A "line" is a service pattern on the corridor: which stations it serves.
@@ -46,8 +44,8 @@ stations = [
 # Requests beyond the remaining capacity are lost (sold-out trains).
 [[lines]]
 code = "EXP"
-name = "Express Océan - Haut-Plateau"
-stops = ["POCEA", "PESTU", "RVNOI", "CREST", "SVGRS", "MNHTE", "HTPLA"]
+name = "Express Port-Gentil - Lékoni"
+stops = ["PGENT", "LAMBA", "MOUIL", "KOULA", "OKOND", "BONGO", "LEKON"]
 travel_hours = 10.0
 base_demand = 500
 first_class_share = 0.20
@@ -55,10 +53,10 @@ fleet = ["EXP-01", "EXP-02", "EXP-03", "EXP-04"]
 
 [[lines]]
 code = "OMN"
-name = "Omnibus Océan - Haut-Plateau"
+name = "Omnibus Port-Gentil - Lékoni"
 stops = [
-    "POCEA", "CTNRD", "LGBLE", "PESTU", "COLIN", "RVNOI", "SABLI", "FDVRT", "CRPAL", "FRHTE",
-    "CREST", "BSRGE", "LCPIR", "SVGRS", "CHUTE", "PLSUD", "MNHTE", "TRRGE", "HTPLA",
+    "PGENT", "CLOPZ", "OMBOU", "LAMBA", "FOUGA", "MOUIL", "SINDA", "LEBAM", "NDEND", "MBIGO",
+    "KOULA", "NDZEL", "MIKOU", "OKOND", "AKIEN", "BAKOU", "BONGO", "BOUMA", "LEKON",
 ]
 travel_hours = 13.5
 base_demand = 560
@@ -68,7 +66,7 @@ fleet = ["OMN-01", "OMN-02", "OMN-03"]
 [[lines]]
 code = "NUI"
 name = "Train de nuit Océan - Haut-Plateau"
-stops = ["POCEA", "CTNRD", "PESTU", "RVNOI", "CRPAL", "CREST", "LCPIR", "SVGRS", "MNHTE", "HTPLA"]
+stops = ["PGENT", "CLOPZ", "LAMBA", "MOUIL", "NDEND", "KOULA", "MIKOU", "OKOND", "BONGO", "LEKON"]
 travel_hours = 12.5
 base_demand = 480
 first_class_share = 0.25
