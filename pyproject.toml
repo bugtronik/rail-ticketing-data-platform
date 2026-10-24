@@ -20,6 +20,9 @@ rail-extract = "rail_ticketing.extract.cli:main"
 requires = ["uv_build>=0.13,<0.14"]
 build-backend = "uv_build"
 
+[tool.uv]
+default-groups = ["dev", "transform"]
+
 [tool.uv.build-backend]
 module-name = "rail_ticketing"
 
@@ -29,6 +32,10 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.10",
     "sqlfluff>=4.4.0",
+]
+transform = [
+    "dbt-core>=1.12.6",
+    "dbt-postgres>=1.11.0",
 ]
 
 # --- Ruff: Python linter + formatter -----------------------------------------
