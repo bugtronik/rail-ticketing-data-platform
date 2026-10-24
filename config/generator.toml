@@ -65,7 +65,7 @@ fleet = ["OMN-01", "OMN-02", "OMN-03"]
 
 [[lines]]
 code = "NUI"
-name = "Train de nuit Océan - Haut-Plateau"
+name = "Train de nuit Port-Gentil - Lékoni"
 stops = ["PGENT", "CLOPZ", "LAMBA", "MOUIL", "NDEND", "KOULA", "MIKOU", "OKOND", "BONGO", "LEKON"]
 travel_hours = 12.5
 base_demand = 480
