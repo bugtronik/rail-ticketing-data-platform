@@ -59,9 +59,9 @@ jobs:
         run: cp .env.example .env
 
       # Same docker-compose.yml as on a developer machine: CI tests the real
-      # setup, init scripts included. --wait blocks until the healthcheck passes.
-      - name: Start MariaDB
-        run: docker compose up -d --wait mariadb
+      # setup, init scripts included. --wait blocks until the healthchecks pass.
+      - name: Start MariaDB and the PostgreSQL warehouse
+        run: docker compose up -d --wait mariadb warehouse
 
       - name: Install dependencies
         run: uv sync --locked
@@ -70,6 +70,6 @@ jobs:
       - name: Run all tests
         run: uv run --env-file .env pytest -v --durations=5
 
-      - name: Show MariaDB logs on failure
+      - name: Show database logs on failure
         if: failure()
-        run: docker compose logs mariadb
+        run: docker compose logs mariadb warehouse
