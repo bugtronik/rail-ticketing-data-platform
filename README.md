@@ -9,7 +9,7 @@ load factor, cancellations and sales channels **without querying production**.
 
 All data is synthetic, produced by the project's own generator.
 
-> 🚧 **Work in progress** — current milestone: **J2, synthetic data generator**.
+> 🚧 **Work in progress** — current milestone: **J3, incremental extraction to PostgreSQL**.
 
 ## Target architecture
 
@@ -44,7 +44,7 @@ flowchart LR
 - [x] **J0** — Repository foundations, tooling, CI lint
 - [x] **J1** — MariaDB source schema
 - [x] **J2** — Synthetic data generator
-- [ ] **J3** — Incremental extraction to PostgreSQL
+- [x] **J3** — Incremental extraction to PostgreSQL
 - [ ] **J4** — dbt dimensional model and tests
 - [ ] **J5** — Airflow orchestration, full `docker compose up` (MVP)
 - [ ] **J6** — End-to-end CI, published dbt docs
@@ -60,6 +60,7 @@ Each significant choice is recorded as an Architecture Decision Record:
 - [ADR 0002 — Python tooling: uv, Ruff, SQLFluff, pre-commit](docs/adr/0002-python-tooling.md)
 - [ADR 0003 — Source schema designed for incremental extraction](docs/adr/0003-source-schema-design.md)
 - [ADR 0004 — Synthetic data generator: history and live modes](docs/adr/0004-synthetic-data-generator.md)
+- [ADR 0005 — Incremental extraction: keyset batches, transactional watermark](docs/adr/0005-incremental-extraction-design.md)
 
 ## Getting started
 
@@ -72,6 +73,8 @@ make up                # start the stack, wait until healthy
 make test              # run the test suite against it
 make seed              # fill the source with 2 years of history (~8-15 min)
 make live              # then simulate the production application (Ctrl+C to stop)
+make extract           # copy the source changes into the warehouse raw layer
+make extract-status    # last change seen and age of the raw copy, per table
 ```
 
 Other commands: `make help`. `make reset` deletes the data volumes, so the
@@ -100,6 +103,33 @@ Measured on a full run (2 years of history):
 | Memory peak | 86 MB (streamed day by day) |
 | Average load factor | 47-56 % depending on the line (≈40 % in February, >70 % in August) |
 | Live mode | one tick every 30 s, ~0.05 s of database work per tick |
+
+## Incremental extraction
+
+`rail-extract` (`src/rail_ticketing/extract/`) copies the 11 source tables
+into the PostgreSQL `raw` schema without touching production more than
+needed:
+
+- reads only the rows changed since the last run (watermark on
+  `updated_at`, plus a 10-minute overlap for late commits);
+- in batches of 10,000 rows, each an index range scan (keyset pagination,
+  no `OFFSET`), with a pause between batches and an optional time window;
+- loads each batch with `COPY` and an idempotent upsert, and commits the
+  rows **and** the new watermark in one transaction: a crash never loses or
+  duplicates anything, a run can always be repeated.
+
+| Measured (2 years of history) | |
+|---|---|
+| Initial load | 6.03 M rows in ~4 min (~24,700 rows/s), 56 MB memory |
+| Source query | ~0.2 s per 10,000-row batch |
+| Incremental run after 2 min of live activity | 845 rows in 0.3 s |
+| Check | counts, amount sums and latest `updated_at` identical on all tables |
+
+Its guarantees are integration tests: run twice → no change; crash after
+two batches, or Ctrl+C in the middle of one → resume without loss or
+duplicate; outside the time window →
+no query reaches the source; a commit later than the overlap → missed (a
+documented limit of watermarks, which CDC would remove).
 
 ## Source data model
 
