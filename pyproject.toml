@@ -13,6 +13,7 @@ dependencies = [
 # Command installed in the virtualenv: `rail-generator history|live`.
 [project.scripts]
 rail-generator = "rail_ticketing.generator.cli:main"
+rail-extract = "rail_ticketing.extract.cli:main"
 
 # Makes the project an installable package (code lives in src/rail_ticketing/).
 [build-system]

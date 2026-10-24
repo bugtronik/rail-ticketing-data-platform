@@ -2,7 +2,7 @@
 # Every target is a thin wrapper: the real commands stay readable below.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lint format up down reset test seed live
+.PHONY: help install lint format up down reset test seed live extract extract-status
 
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -37,3 +37,9 @@ seed: ## Fill the (empty) source with 2 years of history (needs `make up`)
 
 live: ## Simulate the production application in real time (Ctrl+C to stop)
 	uv run --env-file .env rail-generator live
+
+extract: ## Copy the source changes since the last run into the warehouse raw layer
+	uv run --env-file .env rail-extract run
+
+extract-status: ## Show, per table, the last change seen and the age of the raw copy
+	uv run --env-file .env rail-extract status
