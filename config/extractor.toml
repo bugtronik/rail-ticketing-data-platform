@@ -1,0 +1,38 @@
+# =============================================================================
+# Incremental extraction: MariaDB source -> PostgreSQL raw layer
+# See docs/adr/0001 (why batch + watermark) and docs/adr/0005 (how).
+# =============================================================================
+
+# Rows per batch: one source query, one warehouse transaction. Small enough
+# for each source query to stay short, large enough to amortise round trips.
+batch_size = 10000
+
+# Pause between two batches: leaves room for the production queries.
+pause_seconds = 0.05
+
+# Each run re-reads this much before the watermark, to catch rows whose
+# transaction committed late (their updated_at is older than their commit).
+overlap_minutes = 10
+
+# Allowed window, local time of the network. Outside it the extractor does
+# not touch the source, and a running extraction stops between two batches.
+# start = end means "always". A window may cross midnight: start = "21:00",
+# end = "06:00" would only extract at night, as production often requires.
+timezone = "Africa/Libreville"
+window = { start = "00:00", end = "00:00" }
+
+# Tables to extract and their primary key. Order does not matter: the raw
+# layer has no foreign keys. Columns come from the raw table definitions.
+tables = [
+    { name = "stations", key = "station_id" },
+    { name = "rail_lines", key = "line_id" },
+    { name = "line_stops", key = "line_stop_id" },
+    { name = "trains", key = "train_id" },
+    { name = "trips", key = "trip_id" },
+    { name = "sales_channels", key = "channel_id" },
+    { name = "customers", key = "customer_id" },
+    { name = "orders", key = "order_id" },
+    { name = "tickets", key = "ticket_id" },
+    { name = "payments", key = "payment_id" },
+    { name = "refunds", key = "refund_id" },
+]
