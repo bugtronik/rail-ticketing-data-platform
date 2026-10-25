@@ -1,0 +1,34 @@
+# dbt project: turns the raw copy of the source into a star schema for BI.
+#   staging       one view per raw table: renamed, typed, local time; no business rule
+#   intermediate  reusable business logic (is a ticket paid? how far does it go?)
+#   marts         the star schema Power BI reads (tables)
+name: rail_ticketing
+version: "1.0.0"
+profile: rail_ticketing
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+flags:
+  # dbt sends anonymous usage events by default: off, nothing leaves the machine.
+  send_anonymous_usage_stats: false
+
+vars:
+  # Times are stored in UTC; the business reads them in the network's local time.
+  network_timezone: "Africa/Libreville"
+
+models:
+  rail_ticketing:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

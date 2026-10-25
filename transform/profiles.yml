@@ -1,0 +1,14 @@
+# Connection to the warehouse. No secret here: every value comes from the
+# environment (.env locally, the CI runner in GitHub Actions).
+rail_ticketing:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_HOST', '127.0.0.1') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('WAREHOUSE_DB', 'warehouse') }}"
+      user: transformer
+      password: "{{ env_var('TRANSFORMER_DB_PASSWORD') }}"
+      schema: marts  # default only: every folder sets its own schema
+      threads: 4

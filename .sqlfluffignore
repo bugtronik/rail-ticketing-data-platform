@@ -1,0 +1,4 @@
+# dbt's build outputs: compiled SQL, not source code.
+transform/target/
+transform/logs/
+transform/dbt_packages/

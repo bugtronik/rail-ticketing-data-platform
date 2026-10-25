@@ -1,0 +1,173 @@
+version: 2
+
+# Tests on staging check what the source promises (keys, allowed values,
+# references). A failure here means the source changed or broke a rule.
+
+models:
+  - name: stg_stations
+    description: Stations of the network, with their province.
+    columns:
+      - name: station_id
+        data_tests: [unique, not_null]
+      - name: station_code
+        data_tests: [unique, not_null]
+      - name: province
+        description: One of the 9 provinces of Gabon.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Estuaire
+                  - Haut-Ogooué
+                  - Moyen-Ogooué
+                  - Ngounié
+                  - Nyanga
+                  - Ogooué-Ivindo
+                  - Ogooué-Lolo
+                  - Ogooué-Maritime
+                  - Woleu-Ntem
+
+  - name: stg_rail_lines
+    columns:
+      - name: line_id
+        data_tests: [unique, not_null]
+      - name: line_code
+        data_tests: [unique, not_null]
+
+  - name: stg_line_stops
+    columns:
+      - name: line_stop_id
+        data_tests: [unique, not_null]
+      - name: line_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_rail_lines'), field: line_id}
+      - name: station_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_stations'), field: station_id}
+
+  - name: stg_trains
+    columns:
+      - name: train_id
+        data_tests: [unique, not_null]
+
+  - name: stg_trips
+    columns:
+      - name: trip_id
+        data_tests: [unique, not_null]
+      - name: direction
+        data_tests:
+          - accepted_values:
+              arguments: {values: [OUTBOUND, RETURN]}
+      - name: trip_status
+        data_tests:
+          - accepted_values:
+              arguments: {values: [SCHEDULED, CANCELLED, COMPLETED]}
+      - name: line_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_rail_lines'), field: line_id}
+      - name: train_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_trains'), field: train_id}
+
+  - name: stg_sales_channels
+    columns:
+      - name: channel_id
+        data_tests: [unique, not_null]
+
+  - name: stg_customers
+    description: Customer accounts, without names, email or phone.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: loyalty_tier
+        data_tests:
+          - accepted_values:
+              arguments: {values: [NONE, SILVER, GOLD]}
+
+  - name: stg_orders
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: order_reference
+        data_tests: [unique, not_null]
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments: {values: [PENDING, CONFIRMED, CANCELLED]}
+      - name: channel_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_sales_channels'), field: channel_id}
+      - name: customer_id
+        description: NULL for anonymous purchases (counter, ticket machine).
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_customers'), field: customer_id}
+
+  - name: stg_tickets
+    columns:
+      - name: ticket_id
+        data_tests: [unique, not_null]
+      - name: fare_class
+        data_tests:
+          - accepted_values:
+              arguments: {values: [FIRST, SECOND]}
+      - name: fare_type
+        data_tests:
+          - accepted_values:
+              arguments: {values: [FLEX, STANDARD, SAVER]}
+      - name: passenger_type
+        data_tests:
+          - accepted_values:
+              arguments: {values: [ADULT, CHILD, YOUTH, SENIOR]}
+      - name: ticket_status
+        data_tests:
+          - accepted_values:
+              arguments: {values: [ISSUED, CANCELLED, USED]}
+      - name: order_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_orders'), field: order_id}
+      - name: trip_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_trips'), field: trip_id}
+
+  - name: stg_payments
+    columns:
+      - name: payment_id
+        data_tests: [unique, not_null]
+      - name: payment_method
+        data_tests:
+          - accepted_values:
+              arguments: {values: [CARD, MOBILE_MONEY, CASH, BANK_TRANSFER]}
+      - name: payment_status
+        data_tests:
+          - accepted_values:
+              arguments: {values: [PENDING, SUCCEEDED, FAILED]}
+      - name: order_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_orders'), field: order_id}
+
+  - name: stg_refunds
+    columns:
+      - name: refund_id
+        data_tests: [unique, not_null]
+      - name: reason
+        data_tests:
+          - accepted_values:
+              arguments: {values: [CUSTOMER_REQUEST, TRIP_CANCELLED, SERVICE_DISRUPTION]}
+      - name: refund_status
+        data_tests:
+          - accepted_values:
+              arguments: {values: [REQUESTED, APPROVED, REJECTED, PAID]}
+      - name: ticket_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('stg_tickets'), field: ticket_id}

@@ -19,6 +19,8 @@ htmlcov/
 target/
 dbt_packages/
 logs/
+# Anonymous id for dbt's usage stats (turned off in dbt_project.yml anyway).
+.user.yml
 
 # --- Airflow ----------------------------------------------------------------
 airflow/logs/

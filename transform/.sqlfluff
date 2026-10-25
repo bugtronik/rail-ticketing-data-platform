@@ -1,0 +1,14 @@
+# dbt models are Jinja-templated SQL. The jinja templater with dbt builtins
+# understands ref(), source(), var() and config() without a database
+# connection, so the models can be linted anywhere (pre-commit, CI).
+[sqlfluff]
+templater = jinja
+dialect = postgres
+# This value replaces the root one, so AM04 is repeated here.
+#   ST06: wants plain columns before computed ones. Models order columns by
+#         meaning instead (keys, dates, flags, amounts): easier to read.
+exclude_rules = AM04, ST06
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
+load_macros_from_path = macros

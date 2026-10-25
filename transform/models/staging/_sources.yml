@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Copy of the MariaDB source, loaded incrementally by rail-extract (J3).
+      Times are UTC timestamps without time zone.
+    schema: raw
+    tables:
+      - name: stations
+      - name: rail_lines
+      - name: line_stops
+      - name: trains
+      - name: trips
+      - name: sales_channels
+      - name: customers
+      - name: orders
+      - name: tickets
+      - name: payments
+      - name: refunds
+
+  - name: meta
+    description: Bookkeeping of the extraction (watermarks and run log).
+    schema: meta
+    tables:
+      - name: extract_runs
+        description: >
+          One row per extraction run and table. Source freshness is measured
+          here, on the last SUCCESSFUL run: raw tables that rarely change
+          (stations) keep old rows, so the age of their rows says nothing
+          about whether the pipeline still runs.
+        config:
+          loaded_at_field: finished_at
+          freshness:
+            warn_after: {count: 2, period: hour}
+            error_after: {count: 24, period: hour}
+            filter: status = 'success'
