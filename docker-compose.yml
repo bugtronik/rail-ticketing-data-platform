@@ -47,8 +47,9 @@ services:
       POSTGRES_DB: ${WAREHOUSE_DB:-warehouse}
       POSTGRES_USER: ${WAREHOUSE_ADMIN_USER:-warehouse_admin}
       POSTGRES_PASSWORD: ${WAREHOUSE_ADMIN_PASSWORD:?set it in .env}
-      # Read by warehouse/init/01_roles.sh at first start.
+      # Read by warehouse/init/01_roles.sh and 03_transform.sh at first start.
       EXTRACTOR_DB_PASSWORD: ${EXTRACTOR_DB_PASSWORD:?set it in .env}
+      TRANSFORMER_DB_PASSWORD: ${TRANSFORMER_DB_PASSWORD:?set it in .env}
     ports:
       - "${WAREHOUSE_BIND_ADDRESS:-127.0.0.1}:${WAREHOUSE_PORT:-5432}:5432"
     volumes:
