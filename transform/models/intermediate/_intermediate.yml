@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: int_ticket_status
+    description: Sold / cancelled / used / seat-holding flags of each ticket.
+    columns:
+      - name: ticket_id
+        data_tests: [unique, not_null]
+
+  - name: int_ticket_journeys
+    description: Distance (km) of each ticket's journey along its line.
+    columns:
+      - name: ticket_id
+        description: >
+          Unique AND complete: a ticket whose stations are not on its line
+          would be missing here (see tests/assert_ticket_stations_on_trip_line.sql).
+        data_tests: [unique, not_null]
+      - name: distance_km
+        data_tests: [not_null]
+
+  - name: int_ticket_refunds
+    description: Refunded amount (paid refunds only) per ticket.
+    columns:
+      - name: ticket_id
+        data_tests: [unique, not_null]
+
+unit_tests:
+  # A dbt unit test checks the SQL logic on hand-written rows, without the
+  # real data: the business rule is proven case by case.
+  - name: unpaid_tickets_are_never_counted_as_cancelled
+    model: int_ticket_status
+    given:
+      - input: ref('stg_tickets')
+        rows:
+          - {ticket_id: 1, order_id: 10, ticket_status: CANCELLED}  # cancelled after payment
+          - {ticket_id: 2, order_id: 20, ticket_status: CANCELLED}  # payment failed
+          - {ticket_id: 3, order_id: 10, ticket_status: USED}
+          - {ticket_id: 4, order_id: 30, ticket_status: ISSUED}     # payment pending
+      - input: ref('stg_orders')
+        rows:
+          - {order_id: 10, order_status: CONFIRMED}
+          - {order_id: 20, order_status: CANCELLED}
+          - {order_id: 30, order_status: PENDING}
+    expect:
+      rows:
+        - {ticket_id: 1, is_paid: true, is_cancelled: true, is_used: false, occupies_seat: false}
+        - {ticket_id: 2, is_paid: false, is_cancelled: false, is_used: false, occupies_seat: false}
+        - {ticket_id: 3, is_paid: true, is_cancelled: false, is_used: true, occupies_seat: true}
+        - {ticket_id: 4, is_paid: false, is_cancelled: false, is_used: false, occupies_seat: false}
