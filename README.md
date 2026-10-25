@@ -9,7 +9,7 @@ load factor, cancellations and sales channels **without querying production**.
 
 All data is synthetic, produced by the project's own generator.
 
-> 🚧 **Work in progress** — current milestone: **J3, incremental extraction to PostgreSQL**.
+> 🚧 **Work in progress** — current milestone: **J4, dbt dimensional model and tests**.
 
 ## Target architecture
 
@@ -19,7 +19,7 @@ flowchart LR
     src -->|read-only batches| ext[Incremental extractor<br/>watermark on updated_at]
     ext -->|idempotent upsert| raw
     subgraph wh [PostgreSQL warehouse]
-        raw[raw] -->|dbt| stg[staging] -->|dbt| marts[marts]
+        raw[raw] -->|dbt| stg[staging] -->|dbt| int[intermediate] -->|dbt| marts[marts]
     end
     marts --> pbi[Power BI<br/>dashboard]
     af{{Airflow}} -.triggers.-> ext
@@ -31,7 +31,7 @@ flowchart LR
 | Tool | Why it is here |
 |---|---|
 | MariaDB | Simulates the production OLTP database |
-| PostgreSQL | Analytical warehouse, layered `raw` → `staging` → `marts` |
+| PostgreSQL | Analytical warehouse, layered `raw` → `staging` → `intermediate` → `marts` |
 | Python | Data generator and incremental extractor |
 | dbt Core | SQL transformations, dimensional model, data tests, docs |
 | Airflow | Scheduling, retries, idempotent re-runs |
@@ -45,7 +45,7 @@ flowchart LR
 - [x] **J1** — MariaDB source schema
 - [x] **J2** — Synthetic data generator
 - [x] **J3** — Incremental extraction to PostgreSQL
-- [ ] **J4** — dbt dimensional model and tests
+- [x] **J4** — dbt dimensional model and tests
 - [ ] **J5** — Airflow orchestration, full `docker compose up` (MVP)
 - [ ] **J6** — End-to-end CI, published dbt docs
 - [ ] **J7** — Incremental dbt models, customer history (SCD2)
@@ -61,6 +61,7 @@ Each significant choice is recorded as an Architecture Decision Record:
 - [ADR 0003 — Source schema designed for incremental extraction](docs/adr/0003-source-schema-design.md)
 - [ADR 0004 — Synthetic data generator: history and live modes](docs/adr/0004-synthetic-data-generator.md)
 - [ADR 0005 — Incremental extraction: keyset batches, transactional watermark](docs/adr/0005-incremental-extraction-design.md)
+- [ADR 0006 — dbt layers and a star schema with two fact tables](docs/adr/0006-dbt-dimensional-model.md)
 
 ## Getting started
 
@@ -71,14 +72,18 @@ cp .env.example .env   # then change the passwords
 make install           # virtualenv from uv.lock + git hooks
 make up                # start the stack, wait until healthy
 make test              # run the test suite against it
-make seed              # fill the source with 2 years of history (~8-15 min)
+make seed              # fill the source with 2 years of history (~4-8 min)
 make live              # then simulate the production application (Ctrl+C to stop)
 make extract           # copy the source changes into the warehouse raw layer
 make extract-status    # last change seen and age of the raw copy, per table
+make transform         # dbt build: models + data tests, raw -> staging -> marts
+make docs              # dbt documentation and lineage on http://localhost:8081
 ```
 
 Other commands: `make help`. `make reset` deletes the data volumes, so the
-database is rebuilt from `source/mariadb/init/` on the next `make up`.
+databases are rebuilt from their `init/` scripts on the next `make up`;
+`make reset-warehouse` does it for the warehouse only (the source keeps its
+data, run `make extract` again).
 
 ## Synthetic data
 
@@ -118,10 +123,10 @@ needed:
   rows **and** the new watermark in one transaction: a crash never loses or
   duplicates anything, a run can always be repeated.
 
-| Measured (2 years of history) | |
+| Measured (2 years of history, WSL2 laptop, 16 GB RAM) | |
 |---|---|
-| Initial load | 6.03 M rows in ~4 min (~24,700 rows/s), 56 MB memory |
-| Source query | ~0.2 s per 10,000-row batch |
+| Initial load | 6.03 M rows in 167 s (~36,000 rows/s) |
+| Time spent querying the source | ~74 s of the 167 s, ~0.1 s per 10,000-row batch |
 | Incremental run after 2 min of live activity | 845 rows in 0.3 s |
 | Check | counts, amount sums and latest `updated_at` identical on all tables |
 
@@ -130,6 +135,58 @@ two batches, or Ctrl+C in the middle of one → resume without loss or
 duplicate; outside the time window →
 no query reaches the source; a commit later than the overlap → missed (a
 documented limit of watermarks, which CDC would remove).
+
+## Transformation (dbt)
+
+dbt (`transform/`) turns `raw` into a star schema in three layers:
+`staging` (renaming, UTC → local time, personal data dropped), `intermediate`
+(each business rule written once), `marts` (the tables Power BI reads).
+
+```mermaid
+erDiagram
+    fct_tickets }o--|| dim_date : "order_date / departure_date"
+    fct_tickets }o--|| dim_line : ""
+    fct_tickets }o--|| dim_station : "origin / destination"
+    fct_tickets }o--|| dim_channel : ""
+    fct_tickets }o--|| dim_customer : ""
+    fct_tickets }o--|| dim_trip : ""
+    fct_trip_occupancy ||--|| dim_trip : ""
+    fct_trip_occupancy }o--|| dim_line : ""
+    fct_trip_occupancy }o--|| dim_date : "departure_date"
+```
+
+Two fact tables because there are two grains: `fct_tickets` (one row per
+ticket: revenue, cancellations, refunds, channels) and `fct_trip_occupancy`
+(one row per trip: seat-km offered against passenger-km sold, empty trips
+included). The rules behind each number are in
+[ADR 0006](docs/adr/0006-dbt-dimensional-model.md); the most important:
+
+- a ticket is a sale only if its order was paid (`CONFIRMED`);
+- revenue is reported by **date of sale**; refunds stay attached to the sale;
+- load factor = Σ passenger-km / Σ seat-km on departed trips (a ratio of
+  sums, never an average of ratios).
+
+`dbt build` runs 133 models and tests: keys, accepted values, relationships,
+a unit test on the "paid" rule, and business invariants (sales reconcile to
+the franc with `raw`, refunds never exceed the price, load factor in
+[0, 1]). The key ones were checked by breaking the code on purpose.
+
+What the marts answer, on the 2 years of generated data (2.5 M tickets):
+
+| Question | Answer |
+|---|---|
+| Revenue | 30.3 bn XAF sold, 28.8 bn net of refunds; July-August sell ~1.35× an average month, February ~0.7× |
+| Load factor (departed trips) | 52 % overall: express 56 %, night 54 %, stopping 47 %; from 35-45 % in February to 60-75 % in August |
+| Cancellations | 6.5 % of paid tickets: FLEX 10.8 %, STANDARD 5.9 %, SAVER 3.3 % |
+| Refunds | 5.0 % of sales amount |
+| Sales channels | station counters still 48 % of sales; online (web + app) grows from 26 % (late 2024) to 41 % (2026) |
+| Peak hours | purchases peak at 8 am and 5 pm; travel is concentrated on the 6-7 am and 8 pm departures, and on Fridays and Sundays |
+
+| Measured | |
+|---|---|
+| `dbt build` on 2 years (6.0 M raw rows) | ~50 s for 22 models, 110 data tests and 1 unit test; `fct_tickets` (2.5 M rows) built in 17 s |
+
+The SQL behind each answer is in [`transform/analyses/`](transform/analyses/).
 
 ## Source data model
 
