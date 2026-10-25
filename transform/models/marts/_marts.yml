@@ -1,0 +1,159 @@
+version: 2
+
+# The star schema read by Power BI. Two fact tables at two grains (ticket,
+# trip) share the same dimensions. Amounts are in XAF, times in the
+# network's local time (Africa/Libreville).
+
+models:
+  # --- Dimensions -------------------------------------------------------------
+  - name: dim_date
+    description: Calendar, one row per day from the first sale to the last scheduled departure.
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+      - name: day_of_week
+        description: ISO day number, 1 = Monday ... 7 = Sunday.
+        data_tests:
+          - accepted_values:
+              arguments: {values: [1, 2, 3, 4, 5, 6, 7], quote: false}
+
+  - name: dim_station
+    description: Stations of the corridor.
+    columns:
+      - name: station_id
+        data_tests: [unique, not_null]
+      - name: station_code
+        data_tests: [unique, not_null]
+
+  - name: dim_line
+    description: Service patterns on the corridor (express, stopping, night train).
+    columns:
+      - name: line_id
+        data_tests: [unique, not_null]
+      - name: service_type
+        data_tests:
+          - accepted_values:
+              arguments: {values: [Express, Omnibus, Nuit]}
+      - name: length_km
+        description: Distance from the first to the last stop; seat-km = seats x length_km.
+        data_tests: [not_null]
+
+  - name: dim_channel
+    description: Sales channels (counter, website, mobile app, partner agencies).
+    columns:
+      - name: channel_id
+        data_tests: [unique, not_null]
+
+  - name: dim_customer
+    description: >
+      Customer segments, without personal data. customer_id -1 is the
+      "anonymous" member for purchases made without an account.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: age_band
+        description: Age today (not at purchase time), banded.
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['18-24', '25-34', '35-49', '50-64', '65+', Inconnu]}
+
+  - name: dim_trip
+    description: One scheduled run of a train on a line.
+    columns:
+      - name: trip_id
+        data_tests: [unique, not_null]
+      - name: seats_total
+        data_tests: [not_null]
+
+  # --- Facts ------------------------------------------------------------------
+  - name: fct_tickets
+    description: >
+      One row per ticket. Revenue questions: use order_date (date of sale)
+      as the main period; departure_date answers "when do they travel".
+    columns:
+      - name: ticket_id
+        data_tests: [unique, not_null]
+      - name: trip_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_trip'), field: trip_id}
+      - name: line_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_line'), field: line_id}
+      - name: origin_station_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_station'), field: station_id}
+      - name: destination_station_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_station'), field: station_id}
+      - name: channel_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_channel'), field: channel_id}
+      - name: customer_id
+        description: -1 for anonymous purchases, never NULL.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_customer'), field: customer_id}
+      - name: order_date
+        description: Date of sale (local). The main period for revenue.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_day}
+      - name: departure_date
+        description: Date of travel (local).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_day}
+      - name: is_paid
+        description: The order was confirmed (payment succeeded). Unpaid tickets count nowhere.
+        data_tests: [not_null]
+      - name: is_cancelled
+        description: Paid, then cancelled. Cancellation rate = cancelled / paid.
+        data_tests: [not_null]
+      - name: occupies_seat
+        description: Paid and not cancelled.
+        data_tests: [not_null]
+      - name: sales_amount
+        description: Ticket price if paid, else 0 (XAF).
+        data_tests: [not_null]
+      - name: refunded_amount
+        description: Refunds actually paid back for this ticket (XAF).
+        data_tests: [not_null]
+      - name: net_sales_amount
+        description: sales_amount - refunded_amount, attached to the date of the original sale.
+        data_tests: [not_null]
+      - name: passenger_km
+        description: Journey distance if the ticket holds a seat, else 0.
+        data_tests: [not_null]
+
+  - name: fct_trip_occupancy
+    description: >
+      One row per trip: seat-km offered against passenger-km sold.
+      Aggregate the load factor as SUM(passenger_km) / SUM(seat_km), never
+      as an average of load_factor. Keep trip_status = 'COMPLETED' for
+      occupancy KPIs: a scheduled trip is still selling.
+    columns:
+      - name: trip_id
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_trip'), field: trip_id}
+      - name: departure_date
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_day}
+      - name: seat_km
+        description: Seats x line length; 0 for a cancelled trip.
+        data_tests: [not_null]
+      - name: passenger_km
+        data_tests: [not_null]
+      - name: load_factor
+        description: passenger_km / seat_km for this trip; NULL for a cancelled trip.
