@@ -41,9 +41,9 @@ jobs:
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
   tests:
-    name: Tests (unit + integration)
+    name: Tests (unit + integration + end-to-end pipeline)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -69,6 +69,22 @@ jobs:
       # Unit tests need no database; integration tests use the MariaDB above.
       - name: Run all tests
         run: uv run --env-file .env pytest -v --durations=5
+
+      # End to end, on a month of data: generate -> extract -> dbt build.
+      # `dbt build` runs every model AND every dbt test (schema tests, unit
+      # tests, reconciliation): a broken model or a wrong number fails the CI.
+      # The tests above leave the source empty, so the generator can run.
+      - name: Generate one month of source data
+        run: uv run --env-file .env rail-generator history --days 30
+
+      - name: Extract to the warehouse raw layer
+        run: uv run --env-file .env rail-extract run
+
+      - name: Check source freshness
+        run: uv run --env-file .env dbt source freshness --project-dir transform --profiles-dir transform
+
+      - name: Build and test the dbt models
+        run: uv run --env-file .env dbt build --project-dir transform --profiles-dir transform
 
       - name: Show database logs on failure
         if: failure()
