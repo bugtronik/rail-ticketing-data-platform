@@ -72,14 +72,14 @@ passenger-km fails the load-factor test.
 expression tests). Plain SQL (`generate_series`, singular tests) does the
 same here, with one dependency less to install and pin.
 
-## Measurements (2 years of history, local machine)
+## Measurements (2 years of history, WSL2 laptop, 16 GB RAM)
 
 | | |
 |---|---|
-| `dbt build` | 133 nodes (22 models, 1 unit test, 110 data tests) in ~50 s; same time on a second run (full rebuild) |
-| Largest model | `fct_tickets`: 2.5 M rows in 17 s |
-| Reconciliation | mart sales = confirmed orders in `raw`: 30,288,821,000 XAF on both sides |
-| End-to-end CI (1 month of data) | generate 18 s, extract 10 s, `dbt build` 10 s |
+| `dbt build` | 133 nodes (22 models, 1 unit test, 110 data tests) in 54 s; every run costs the same (full rebuild) |
+| Largest model | `fct_tickets`: 2.5 M rows in 25 s |
+| Reconciliation | mart sales = confirmed orders in `raw`: 30,358,035,500 XAF on both sides |
+| End-to-end CI job (1 month of data, test machine) | generate 18 s, extract 10 s, `dbt build` 10 s |
 
 ## Consequences
 

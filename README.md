@@ -171,20 +171,21 @@ a unit test on the "paid" rule, and business invariants (sales reconcile to
 the franc with `raw`, refunds never exceed the price, load factor in
 [0, 1]). The key ones were checked by breaking the code on purpose.
 
-What the marts answer, on the 2 years of generated data (2.5 M tickets):
+What the marts answer, on the 2 years of generated data (2.5 M tickets,
+WSL2 laptop, 16 GB RAM):
 
 | Question | Answer |
 |---|---|
-| Revenue | 30.3 bn XAF sold, 28.8 bn net of refunds; July-August sell ~1.35× an average month, February ~0.7× |
-| Load factor (departed trips) | 52 % overall: express 56 %, night 54 %, stopping 47 %; from 35-45 % in February to 60-75 % in August |
-| Cancellations | 6.5 % of paid tickets: FLEX 10.8 %, STANDARD 5.9 %, SAVER 3.3 % |
-| Refunds | 5.0 % of sales amount |
-| Sales channels | station counters still 48 % of sales; online (web + app) grows from 26 % (late 2024) to 41 % (2026) |
-| Peak hours | purchases peak at 8 am and 5 pm; travel is concentrated on the 6-7 am and 8 pm departures, and on Fridays and Sundays |
+| Revenue | 30.4 bn XAF sold, 28.9 bn net of refunds; July-August sell 1.3-1.4× an average month, February 0.7× |
+| Load factor (departed trips) | stopping trains lowest every month, express and night trains close together; 36-45 % in February, 63-76 % in August |
+| Cancellations | 6.1 % of paid tickets: FLEX 10.4 %, STANDARD 5.5 %, SAVER 2.7 % |
+| Refunds | 4.7 % of sales amount |
+| Sales channels | station counters 48 %, partner agencies 17 %, online (web + app) 35 % |
+| Peak hours | purchases peak at 8 am and 5 pm; travel is concentrated on the 6-7 am and 8 pm departures |
 
 | Measured | |
 |---|---|
-| `dbt build` on 2 years (6.0 M raw rows) | ~50 s for 22 models, 110 data tests and 1 unit test; `fct_tickets` (2.5 M rows) built in 17 s |
+| `dbt build` on 2 years (6.0 M raw rows) | 54 s for 22 models, 110 data tests and 1 unit test; `fct_tickets` (2.5 M rows) built in 25 s |
 
 The SQL behind each answer is in [`transform/analyses/`](transform/analyses/).
 
