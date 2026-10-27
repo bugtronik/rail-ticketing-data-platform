@@ -1,8 +1,61 @@
-# Local stack, started with `make up`. Services are added milestone by milestone.
+# The whole platform on one machine: `make up` (or `docker compose up -d`).
+#
+#   mariadb ──seed (once)──> generator (live) ── simulated production
+#      │
+#      └──── Airflow, every hour: extract ──> warehouse raw ──> dbt marts
+#
 # Every credential comes from .env (git-ignored); ${VAR:?} makes Compose stop
 # with an explicit error if a variable is missing, instead of starting with
-# an empty password.
+# an empty password. Each service receives only the passwords it needs.
 name: rail-ticketing
+
+# --- Shared blocks (YAML anchors: written once, reused below) ---------------
+
+# One image for the generator and for Airflow: built from airflow/Dockerfile,
+# it contains the project and dbt (see the comments in the Dockerfile).
+x-pipeline-image: &pipeline-image
+  build:
+    context: .
+    dockerfile: airflow/Dockerfile
+  image: rail-ticketing/pipeline:local
+
+# The generator plays the production application: it connects to MariaDB
+# with the application account, over the Compose network (service name
+# `mariadb`, container port 3306, whatever port .env publishes on the host).
+x-generator: &generator
+  <<: *pipeline-image
+  entrypoint: ["/opt/pipeline/.venv/bin/rail-generator"]
+  working_dir: /opt/pipeline
+  environment:
+    MARIADB_HOST: mariadb
+    MARIADB_PORT: "3306"
+    MARIADB_DATABASE: ${MARIADB_DATABASE:-ticketing}
+    APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set it in .env}
+
+# Settings shared by every Airflow component.
+x-airflow-env: &airflow-env
+  # LocalExecutor: tasks run as processes of the scheduler. No Celery, no
+  # Redis, no worker: enough for one machine and a few tasks per hour.
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD:?set it in .env}@airflow-db/airflow
+  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+  # In Airflow 3, running tasks report to the API server (not to the
+  # database): the scheduler must know where it is on the Compose network.
+  AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+  # Secrets shared by all components. Generated per container otherwise:
+  # the API server would then reject the tokens of the scheduler's tasks.
+  AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?set it in .env}
+  AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:?set it in .env}
+  AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?set it in .env}
+
+x-airflow: &airflow
+  <<: *pipeline-image
+  environment: *airflow-env
+  volumes:
+    # Task logs: written by the scheduler, read by the API server for the UI.
+    - airflow_logs:/opt/airflow/logs
+  restart: unless-stopped
 
 services:
   # Simulated production database (OLTP) of the fictional rail operator.
@@ -67,6 +120,137 @@ services:
           memory: 768M
     restart: unless-stopped
 
+  # --- Simulated production activity --------------------------------------
+
+  # Runs once at each `up`: fills an EMPTY source with SEED_DAYS days of
+  # history (90 by default, ~1 min), and exits successfully without doing
+  # anything if the source already holds data. 2 years: SEED_DAYS=730.
+  seed:
+    <<: *generator
+    command: ["history", "--days", "${SEED_DAYS:-90}", "--if-empty"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: "no"
+
+  # The application, in real time: new orders, payments, cancellations
+  # every 30 seconds. Each pipeline run finds fresh changes to extract.
+  generator:
+    <<: *generator
+    command: ["live"]
+    # The generator is PID 1 in its container, and PID 1 ignores a signal it
+    # has no handler for: on `docker stop`, the default SIGTERM would do
+    # nothing until Docker kills it after 10 s. Python handles SIGINT
+    # (Ctrl+C, KeyboardInterrupt): the generator logs "Stopped." and exits.
+    stop_signal: SIGINT
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+
+  # --- Orchestration (Airflow 3) --------------------------------------------
+
+  # Airflow's own database (DAG runs, task states, users). Kept apart from
+  # the warehouse: resetting one never touches the other. No host port.
+  airflow-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:?set it in .env}
+    volumes:
+      - airflow_db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow", "-d", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  # Runs once at each `up`: migrates Airflow's database and creates the
+  # admin account (both are no-ops when already done), then exits.
+  airflow-init:
+    <<: *airflow
+    command: version
+    environment:
+      <<: *airflow-env
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?set it in .env}
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+    restart: "no"
+
+  # Web UI and REST API: http://localhost:8080
+  airflow-api-server:
+    <<: *airflow
+    command: api-server
+    ports:
+      - "${AIRFLOW_BIND_ADDRESS:-127.0.0.1}:${AIRFLOW_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Reads the DAG files and stores them in Airflow's database.
+  airflow-dag-processor:
+    <<: *airflow
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Decides what runs when, and (LocalExecutor) runs the tasks. The only
+  # Airflow component that receives the pipeline's database passwords.
+  airflow-scheduler:
+    <<: *airflow
+    command: scheduler
+    environment:
+      <<: *airflow-env
+      MARIADB_HOST: mariadb
+      MARIADB_PORT: "3306"
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-ticketing}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:?set it in .env}
+      WAREHOUSE_HOST: warehouse
+      WAREHOUSE_PORT: "5432"
+      WAREHOUSE_DB: ${WAREHOUSE_DB:-warehouse}
+      EXTRACTOR_DB_PASSWORD: ${EXTRACTOR_DB_PASSWORD:?set it in .env}
+      TRANSFORMER_DB_PASSWORD: ${TRANSFORMER_DB_PASSWORD:?set it in .env}
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-api-server:
+        condition: service_healthy
+      warehouse:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+
 volumes:
   mariadb_data:
   warehouse_data:
+  airflow_db_data:
+  airflow_logs:
