@@ -9,21 +9,21 @@ load factor, cancellations and sales channels **without querying production**.
 
 All data is synthetic, produced by the project's own generator.
 
-> 🚧 **Work in progress** — current milestone: **J4, dbt dimensional model and tests**.
+> 🚧 **Work in progress** — current milestone: **J5, Airflow orchestration: the MVP runs with one command**.
 
-## Target architecture
+## Architecture
 
 ```mermaid
 flowchart LR
-    gen[Data generator<br/>Python] -->|writes| src[(MariaDB<br/>OLTP source)]
+    gen[Data generator<br/>live, every 30 s] -->|writes| src[(MariaDB<br/>OLTP source)]
     src -->|read-only batches| ext[Incremental extractor<br/>watermark on updated_at]
     ext -->|idempotent upsert| raw
     subgraph wh [PostgreSQL warehouse]
         raw[raw] -->|dbt| stg[staging] -->|dbt| int[intermediate] -->|dbt| marts[marts]
     end
     marts --> pbi[Power BI<br/>dashboard]
-    af{{Airflow}} -.triggers.-> ext
-    af -.runs dbt build.-> stg
+    af{{Airflow<br/>every hour}} -.1. extract.-> ext
+    af -.2. dbt build.-> stg
 ```
 
 ## Stack
@@ -36,7 +36,7 @@ flowchart LR
 | dbt Core | SQL transformations, dimensional model, data tests, docs |
 | Airflow | Scheduling, retries, idempotent re-runs |
 | Docker Compose | One-command reproducible environment |
-| GitHub Actions | Lint and tests on every push |
+| GitHub Actions | Lint, tests, end-to-end pipeline and image build on every push |
 | Power BI | Business dashboard on the `marts` layer |
 
 ## Roadmap
@@ -46,7 +46,7 @@ flowchart LR
 - [x] **J2** — Synthetic data generator
 - [x] **J3** — Incremental extraction to PostgreSQL
 - [x] **J4** — dbt dimensional model and tests
-- [ ] **J5** — Airflow orchestration, full `docker compose up` (MVP)
+- [x] **J5** — Airflow orchestration, full `docker compose up` (MVP)
 - [ ] **J6** — End-to-end CI, published dbt docs
 - [ ] **J7** — Incremental dbt models, customer history (SCD2)
 - [ ] **J8** — Power BI dashboard
@@ -62,28 +62,70 @@ Each significant choice is recorded as an Architecture Decision Record:
 - [ADR 0004 — Synthetic data generator: history and live modes](docs/adr/0004-synthetic-data-generator.md)
 - [ADR 0005 — Incremental extraction: keyset batches, transactional watermark](docs/adr/0005-incremental-extraction-design.md)
 - [ADR 0006 — dbt layers and a star schema with two fact tables](docs/adr/0006-dbt-dimensional-model.md)
+- [ADR 0007 — Orchestration: Airflow 3 calls the project's command-line tools](docs/adr/0007-airflow-orchestration.md)
 
 ## Getting started
 
-Requirements: Docker (Desktop with WSL2 on Windows), [uv](https://docs.astral.sh/uv/), `make`.
+Requirements: Docker (Desktop with WSL2 on Windows; Airflow alone asks for
+4 GB of memory), [uv](https://docs.astral.sh/uv/), `make`.
 
 ```bash
-cp .env.example .env   # then change the passwords
+cp .env.example .env   # then change the passwords and secrets
+make up                # build the image, start everything, wait until healthy
+```
+
+The first `make up` builds the image and seeds 90 days of history (a few
+minutes); the next ones start in under a minute. Then:
+
+- **Airflow** on <http://localhost:8080> (user `admin`, password
+  `AIRFLOW_ADMIN_PASSWORD` from `.env`): the `rail_ticketing_pipeline` DAG
+  starts on its own and runs every hour; `make run` triggers it now.
+- **The warehouse** on `localhost:5432` (`marts` schema), for SQL clients
+  and Power BI.
+- `make logs` follows the generator and the scheduler; `make ps` shows the
+  state of every service.
+
+`make history` deletes everything and restarts with 2 years of history.
+`make reset` deletes the data volumes, so the databases are rebuilt from
+their `init/` scripts on the next `make up`; `make reset-warehouse` does it
+for the warehouse only. Other commands: `make help`.
+
+For development, the tools also run from the laptop against the same
+databases (they publish their ports on localhost):
+
+```bash
 make install           # virtualenv from uv.lock + git hooks
-make up                # start the stack, wait until healthy
-make test              # run the test suite against it
-make seed              # fill the source with 2 years of history (~4-8 min)
-make live              # then simulate the production application (Ctrl+C to stop)
-make extract           # copy the source changes into the warehouse raw layer
-make extract-status    # last change seen and age of the raw copy, per table
-make transform         # dbt build: models + data tests, raw -> staging -> marts
+make test              # unit + integration tests
+make extract           # what the DAG's first task does
+make transform         # what its last task does (dbt build)
 make docs              # dbt documentation and lineage on http://localhost:8081
 ```
 
-Other commands: `make help`. `make reset` deletes the data volumes, so the
-databases are rebuilt from their `init/` scripts on the next `make up`;
-`make reset-warehouse` does it for the warehouse only (the source keeps its
-data, run `make extract` again).
+## Orchestration (Airflow)
+
+```mermaid
+flowchart LR
+    e[extract<br/>rail-extract run] --> f[check_freshness<br/>dbt source freshness] --> b[dbt_build<br/>dbt build]
+```
+
+One DAG, every hour; each task is a command of the project
+([`airflow/dags/`](airflow/dags/rail_ticketing_pipeline.py)). Airflow only
+schedules, retries and logs. Every task is idempotent: extraction resumes
+from its watermark, dbt rebuilds from `raw`, so a retry or a manual re-run
+can never duplicate or lose data. `extract` retries 3 times with exponential
+backoff: tested by stopping MariaDB during a run (attempt 1 fails, attempt 2
+succeeds once the database is back). Details: [ADR 0007](docs/adr/0007-airflow-orchestration.md).
+
+`docker compose up` starts the services in dependency order:
+
+```mermaid
+flowchart LR
+    mariadb[(mariadb)] --> seed[seed<br/>once, if empty] --> generator[generator<br/>live]
+    seed --> sched
+    adb[(airflow-db)] --> init[airflow-init<br/>migrate + admin] --> api[airflow-api-server] --> sched[airflow-scheduler]
+    init --> dp[airflow-dag-processor]
+    warehouse[(warehouse)] --> sched
+```
 
 ## Synthetic data
 
