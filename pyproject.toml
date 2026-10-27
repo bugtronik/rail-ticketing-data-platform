@@ -20,6 +20,9 @@ rail-extract = "rail_ticketing.extract.cli:main"
 requires = ["uv_build>=0.13,<0.14"]
 build-backend = "uv_build"
 
+# `uv sync` installs both groups. dbt sits in its own group so that the
+# Airflow image can install the project and dbt without the dev tools, in a
+# virtualenv separate from Airflow's (see airflow/Dockerfile).
 [tool.uv]
 default-groups = ["dev", "transform"]
 

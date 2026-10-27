@@ -77,7 +77,8 @@ make up                # build the image, start everything, wait until healthy
 The first `make up` builds the image and seeds 90 days of history (a few
 minutes); the next ones start in under a minute. Then:
 
-- **Airflow** on <http://localhost:8080> (user `admin`, password
+- **Airflow** on <http://127.0.0.1:8080> (or the `AIRFLOW_PORT` set in `.env`,
+     if 8080 is already taken on your machine; user `admin`, password
   `AIRFLOW_ADMIN_PASSWORD` from `.env`): the `rail_ticketing_pipeline` DAG
   starts on its own and runs every hour; `make run` triggers it now.
 - **The warehouse** on `localhost:5432` (`marts` schema), for SQL clients
