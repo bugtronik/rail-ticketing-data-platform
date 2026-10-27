@@ -1,0 +1,14 @@
+# What `docker build` must NOT send to the image: secrets, local
+# environments, build outputs. The image is rebuilt from the code only.
+.env
+.git
+.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+transform/target
+transform/logs
+transform/dbt_packages
+airflow/logs
+docs
+tests
