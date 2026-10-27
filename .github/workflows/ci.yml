@@ -89,3 +89,36 @@ jobs:
       - name: Show database logs on failure
         if: failure()
         run: docker compose logs mariadb warehouse
+
+  image:
+    name: Airflow image (build + DAG import check)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Compose needs the variables of .env to read the file, even to build.
+      - name: Create .env from the example
+        run: cp .env.example .env
+
+      # Same build definition as `make up` (docker-compose.yml + Dockerfile).
+      - name: Build the pipeline image
+        run: docker compose build airflow-scheduler
+
+      # A DAG with a syntax error or a bad import is not "a failed run":
+      # Airflow just does not show it. Catch it here instead. --local parses
+      # the files in the image (the throwaway SQLite database only exists
+      # because the command needs one).
+      - name: Check that the DAG imports without error
+        run: >-
+          docker run --rm -e AIRFLOW__CORE__LOAD_EXAMPLES=false
+          rail-ticketing/pipeline:local
+          bash -c "airflow db migrate > /dev/null && airflow dags list-import-errors --local"
+
+      # The tools the tasks call are installed in the image's own virtualenv.
+      - name: Check the pipeline tools inside the image
+        run: |
+          docker run --rm --entrypoint /opt/pipeline/.venv/bin/rail-extract rail-ticketing/pipeline:local --help
+          docker run --rm --entrypoint /opt/pipeline/.venv/bin/dbt rail-ticketing/pipeline:local --version
