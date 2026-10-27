@@ -21,6 +21,10 @@ def _history(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     conn = db.connect()
     if not db.source_is_empty(conn):
+        if args.if_empty:
+            # `docker compose up` seeds on every start: only the first one has work to do.
+            log.info("The source database already contains data: nothing to seed.")
+            return 0
         # History mode assigns ids itself (1, 2, 3...): it needs an empty source.
         # The app account cannot DELETE, so cleaning is done by recreating the volume.
         log.error("The source database already contains data. Run `make reset && make up`.")
@@ -64,6 +68,11 @@ def main(argv: list[str] | None = None) -> int:
 
     history = commands.add_parser("history", help="fill an empty source with the history")
     history.add_argument("--days", type=int, help="override history_days (shorter runs)")
+    history.add_argument(
+        "--if-empty",
+        action="store_true",
+        help="succeed without doing anything if the source already holds data",
+    )
     history.set_defaults(run=_history)
 
     live = commands.add_parser("live", help="simulate the application in real time")
