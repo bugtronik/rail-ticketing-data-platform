@@ -41,9 +41,9 @@ jobs:
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
   tests:
-    name: Tests (unit + integration + end-to-end pipeline)
+    name: Tests (unit + integration)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -66,59 +66,60 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
-      # Unit tests need no database; integration tests use the MariaDB above.
+      # Unit tests need no database; integration tests use the databases above.
       - name: Run all tests
         run: uv run --env-file .env pytest -v --durations=5
-
-      # End to end, on a month of data: generate -> extract -> dbt build.
-      # `dbt build` runs every model AND every dbt test (schema tests, unit
-      # tests, reconciliation): a broken model or a wrong number fails the CI.
-      # The tests above leave the source empty, so the generator can run.
-      - name: Generate one month of source data
-        run: uv run --env-file .env rail-generator history --days 30
-
-      - name: Extract to the warehouse raw layer
-        run: uv run --env-file .env rail-extract run
-
-      - name: Check source freshness
-        run: uv run --env-file .env dbt source freshness --project-dir transform --profiles-dir transform
-
-      - name: Build and test the dbt models
-        run: uv run --env-file .env dbt build --project-dir transform --profiles-dir transform
 
       - name: Show database logs on failure
         if: failure()
         run: docker compose logs mariadb warehouse
 
-  image:
-    name: Airflow image (build + DAG import check)
+  # The whole platform, as a user starts it: `docker compose up`, then the
+  # first DAG run must succeed on its own. It runs every dbt model and every
+  # dbt test on a month of data, through Airflow, in the real images.
+  pipeline:
+    name: End-to-end pipeline (docker compose + Airflow)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
+    env:
+      # A month of history keeps the job short (the default is 90 days).
+      SEED_DAYS: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # Compose needs the variables of .env to read the file, even to build.
       - name: Create .env from the example
         run: cp .env.example .env
 
-      # Same build definition as `make up` (docker-compose.yml + Dockerfile).
       - name: Build the pipeline image
         run: docker compose build airflow-scheduler
 
       # A DAG with a syntax error or a bad import is not "a failed run":
-      # Airflow just does not show it. Catch it here instead. --local parses
-      # the files in the image (the throwaway SQLite database only exists
-      # because the command needs one).
+      # Airflow just does not show it. Catch it before starting anything.
+      # --local parses the files in the image (the throwaway SQLite database
+      # only exists because the command needs one).
       - name: Check that the DAG imports without error
         run: >-
           docker run --rm -e AIRFLOW__CORE__LOAD_EXAMPLES=false
           rail-ticketing/pipeline:local
           bash -c "airflow db migrate > /dev/null && airflow dags list-import-errors --local"
 
-      # The tools the tasks call are installed in the image's own virtualenv.
-      - name: Check the pipeline tools inside the image
+      - name: Start the platform
+        run: docker compose up -d --wait
+
+      - name: Wait for the first DAG run to succeed
+        run: .github/scripts/wait_for_first_dag_run.sh 900
+
+      - name: Check that the marts are filled
         run: |
-          docker run --rm --entrypoint /opt/pipeline/.venv/bin/rail-extract rail-ticketing/pipeline:local --help
-          docker run --rm --entrypoint /opt/pipeline/.venv/bin/dbt rail-ticketing/pipeline:local --version
+          tickets=$(docker compose exec -T warehouse psql -U warehouse_admin -d warehouse \
+            -tAc "SELECT COUNT(*) FROM marts.fct_tickets")
+          echo "fct_tickets: ${tickets} rows"
+          test "${tickets}" -gt 0
+
+      - name: Show the logs of every service on failure
+        if: failure()
+        run: |
+          docker compose ps -a
+          docker compose logs --tail=100
