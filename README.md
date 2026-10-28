@@ -9,7 +9,10 @@ load factor, cancellations and sales channels **without querying production**.
 
 All data is synthetic, produced by the project's own generator.
 
-> 🚧 **Work in progress** — current milestone: **J5, Airflow orchestration: the MVP runs with one command**.
+**📚 [dbt documentation and lineage](https://bugtronik.github.io/rail-ticketing-data-platform/)**:
+every model, column and test, rebuilt by the CI on each push to `main`.
+
+> 🚧 **Work in progress** — current milestone: **J6, end-to-end CI and published dbt docs**.
 
 ## Architecture
 
@@ -36,7 +39,7 @@ flowchart LR
 | dbt Core | SQL transformations, dimensional model, data tests, docs |
 | Airflow | Scheduling, retries, idempotent re-runs |
 | Docker Compose | One-command reproducible environment |
-| GitHub Actions | Lint, tests, end-to-end pipeline and image build on every push |
+| GitHub Actions | Lint, tests, the whole platform run end to end, dbt docs published on Pages |
 | Power BI | Business dashboard on the `marts` layer |
 
 ## Roadmap
@@ -47,7 +50,7 @@ flowchart LR
 - [x] **J3** — Incremental extraction to PostgreSQL
 - [x] **J4** — dbt dimensional model and tests
 - [x] **J5** — Airflow orchestration, full `docker compose up` (MVP)
-- [ ] **J6** — End-to-end CI, published dbt docs
+- [x] **J6** — End-to-end CI, published dbt docs
 - [ ] **J7** — Incremental dbt models, customer history (SCD2)
 - [ ] **J8** — Power BI dashboard
 - [ ] **J9** — Benchmarks, final documentation
@@ -66,8 +69,9 @@ Each significant choice is recorded as an Architecture Decision Record:
 
 ## Getting started
 
-Requirements: Docker (Desktop with WSL2 on Windows; Airflow alone asks for
-4 GB of memory), [uv](https://docs.astral.sh/uv/), `make`.
+Requirements: Docker (Desktop with WSL2 on Windows), [uv](https://docs.astral.sh/uv/),
+`make`. The running platform uses about 2.4 GB of memory (measured with
+`docker stats`: Airflow ~1.5 GB, the three databases ~0.9 GB).
 
 ```bash
 cp .env.example .env   # then change the passwords and secrets
@@ -127,6 +131,27 @@ flowchart LR
     init --> dp[airflow-dag-processor]
     warehouse[(warehouse)] --> sched
 ```
+
+A manual run in the Airflow UI: `extract` succeeded at its second attempt
+(MariaDB had been stopped during the first one), then the rest of the run
+went through without any intervention.
+
+![Airflow: a DAG run whose extract task succeeded on retry](docs/images/airflow-dag-run.png)
+
+## Continuous integration
+
+Every push runs three jobs ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+
+| Job | What it proves |
+|---|---|
+| Lint | Ruff (Python), SQLFluff (SQL and dbt models), YAML/TOML hygiene: same hooks as `git commit` |
+| Tests | unit and integration tests against real MariaDB and PostgreSQL containers |
+| End-to-end pipeline | `docker compose up` on a clean runner with a month of data; the first DAG run must succeed on its own (extraction, freshness, `dbt build` with all its tests), and the marts must be filled |
+
+On `main`, the end-to-end job also generates the dbt documentation from
+the warehouse it has just built, and a fourth job publishes it on GitHub
+Pages. Actions are pinned to commit SHAs and the workflow only gets
+`contents: read`; the publishing job alone may write to Pages.
 
 ## Synthetic data
 
