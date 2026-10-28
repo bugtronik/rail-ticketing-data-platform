@@ -118,8 +118,42 @@ jobs:
           echo "fct_tickets: ${tickets} rows"
           test "${tickets}" -gt 0
 
+      # The dbt documentation, generated from the warehouse that was just
+      # built, as one self-contained HTML page (--static).
+      - name: Generate the dbt documentation
+        run: |
+          docker compose exec -T -w /opt/pipeline airflow-scheduler \
+            .venv/bin/dbt docs generate --static --project-dir transform --profiles-dir transform
+          mkdir -p site
+          docker compose cp airflow-scheduler:/opt/pipeline/transform/target/static_index.html site/index.html
+
+      # Only main publishes the documentation; pull requests just build it.
+      - name: Upload the documentation for GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
       - name: Show the logs of every service on failure
         if: failure()
         run: |
           docker compose ps -a
           docker compose logs --tail=100
+
+  # Publishes the dbt documentation on https://<user>.github.io/<repo>/.
+  # The only job allowed to write to Pages, and only from main.
+  docs:
+    name: Publish the dbt documentation
+    needs: pipeline
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
