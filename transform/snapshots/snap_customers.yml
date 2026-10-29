@@ -1,0 +1,25 @@
+# History of each customer's segment (SCD type 2).
+#
+# raw.customers only holds the CURRENT row: when a customer moves up from
+# SILVER to GOLD, the old value is overwritten. At each run, the snapshot
+# compares the tracked columns with its last version; if they differ, it
+# closes that version (dbt_valid_to) and opens a new one (dbt_valid_from).
+# This history exists nowhere else: losing the snapshots schema loses it.
+snapshots:
+  - name: snap_customers
+    # Built on the staging model, not on raw: names, email and phone are
+    # already removed, so the history never stores personal data.
+    relation: ref('stg_customers')
+    description: Every version of each customer's city and loyalty tier.
+    config:
+      schema: snapshots
+      unique_key: customer_id
+      # "check": a new version only when city or loyalty_tier changes. With
+      # "timestamp", every update would open one (a new phone number too).
+      strategy: check
+      check_cols: [city, loyalty_tier]
+      # Dates each version with the source's updated_at instead of the time
+      # the snapshot ran, which can be up to an hour later.
+      updated_at: updated_at
+      # Open versions end in 9999 instead of NULL: joins can use BETWEEN.
+      dbt_valid_to_current: "'9999-12-31'::timestamp"

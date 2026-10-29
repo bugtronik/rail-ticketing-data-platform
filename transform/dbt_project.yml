@@ -10,6 +10,7 @@ model-paths: ["models"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
 analysis-paths: ["analyses"]
+snapshot-paths: ["snapshots"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
@@ -32,3 +33,10 @@ models:
     marts:
       +schema: marts
       +materialized: table
+      # Fresh planner statistics as soon as a table is (re)built: the next
+      # models that join it are planned with its real size (see ADR 0008).
+      +post-hook: "ANALYZE {{ this }}"
+
+snapshots:
+  rail_ticketing:
+    +post-hook: "ANALYZE {{ this }}"

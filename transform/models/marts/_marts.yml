@@ -46,11 +46,26 @@ models:
 
   - name: dim_customer
     description: >
-      Customer segments, without personal data. customer_id -1 is the
-      "anonymous" member for purchases made without an account.
+      One row per version of a customer's segment (SCD type 2), without
+      personal data. A sale points to the version valid when the order was
+      placed (fct_tickets.customer_sk). customer_sk '-1' is the "anonymous"
+      member for purchases made without an account.
     columns:
-      - name: customer_id
+      - name: customer_sk
+        description: Key of one version (dbt_scd_id of the snapshot).
         data_tests: [unique, not_null]
+      - name: customer_id
+        description: The customer, the same for all their versions.
+        data_tests: [not_null]
+      - name: valid_from
+        description: >
+          Local time this version started. The first version of each
+          customer starts in 1900: the history only begins when the snapshot
+          started (see snapshots/snap_customers.yml).
+        data_tests: [not_null]
+      - name: valid_to
+        description: Local time this version ended; 9999-12-31 for the current one.
+        data_tests: [not_null]
       - name: age_band
         description: Age today (not at purchase time), banded.
         data_tests:
@@ -99,6 +114,14 @@ models:
           - not_null
           - relationships:
               arguments: {to: ref('dim_customer'), field: customer_id}
+      - name: customer_sk
+        description: >
+          The customer's version at the time of the order: join dim_customer
+          on this column to analyse sales by the segment of the moment.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_customer'), field: customer_sk}
       - name: order_date
         description: Date of sale (local). The main period for revenue.
         data_tests:

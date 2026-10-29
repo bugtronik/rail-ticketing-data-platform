@@ -14,6 +14,8 @@ SELECT
     t.destination_station_id,
     o.channel_id,
     COALESCE(o.customer_id, -1) AS customer_id,
+    -- The customer's version (segment) at the time of the order.
+    COALESCE(c.customer_sk, '-1') AS customer_sk,
     o.ordered_at_local::DATE AS order_date,
     EXTRACT(HOUR FROM o.ordered_at_local)::INT AS order_hour,
     tr.departure_at_local::DATE AS departure_date,
@@ -38,3 +40,8 @@ INNER JOIN {{ ref('stg_trips') }} AS tr ON t.trip_id = tr.trip_id
 INNER JOIN {{ ref('int_ticket_status') }} AS s ON t.ticket_id = s.ticket_id
 INNER JOIN {{ ref('int_ticket_journeys') }} AS j ON t.ticket_id = j.ticket_id
 LEFT JOIN {{ ref('int_ticket_refunds') }} AS r ON t.ticket_id = r.ticket_id
+LEFT JOIN {{ ref('dim_customer') }} AS c
+    ON
+        o.customer_id = c.customer_id
+        AND o.ordered_at_local >= c.valid_from
+        AND o.ordered_at_local < c.valid_to

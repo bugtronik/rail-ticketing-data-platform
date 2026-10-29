@@ -6,5 +6,7 @@ SELECT
     loyalty_tier,
     birth_date,
     is_active,
-    {{ to_local_time('created_at') }} AS created_at_local
+    {{ to_local_time('created_at') }} AS created_at_local,
+    -- UTC, as in the source: the snapshot dates each version with it.
+    updated_at
 FROM {{ source('raw', 'customers') }}
