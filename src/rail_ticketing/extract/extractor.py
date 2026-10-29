@@ -13,7 +13,8 @@ For each table:
   6. for each batch, in ONE warehouse transaction: COPY the rows into a
      temporary table, upsert them into raw (INSERT ... ON CONFLICT), move the
      watermark forward, update the run log. Either everything is committed or
-     nothing is: after a crash, the watermark is never ahead of the data.
+     nothing is: after a crash, the watermark is never ahead of the data;
+  7. if rows were written, refresh the table's planner statistics (ANALYZE).
 
 Running twice is harmless: rows already loaded are matched on their primary
 key and left untouched (idempotence).
@@ -149,6 +150,8 @@ class TableExtractor:
 
         result.status = "success"
         self._finish_run(result)
+        if result.rows_inserted or result.rows_updated:
+            self._analyze()
 
     # --- Source side --------------------------------------------------------------------
 
@@ -211,6 +214,20 @@ class TableExtractor:
             )
             row = cur.fetchone()
         return (row[0], row[1]) if row else (EPOCH, 0)
+
+    def _analyze(self) -> None:
+        """Refresh the planner statistics of the raw table after a load.
+
+        PostgreSQL's autovacuum analyzes a table only once 50 rows + 10 % of
+        it have changed: the small reference tables (36 line stops, 19
+        stations) are never analyzed. The planner then guesses their size and
+        picks, for the dbt models that join them, a plan 50 times slower
+        (measured: 35 s instead of 0.7 s for fct_tickets on 100,000 tickets).
+        ANALYZE reads a sample: well under a second, even on tickets.
+        """
+        with self.warehouse.cursor() as cur:
+            cur.execute(sql.SQL("ANALYZE raw.{}").format(sql.Identifier(self.spec.name)))
+        self.warehouse.commit()
 
     def _create_stage(self, columns: list[str]) -> None:
         """Temporary table with the raw columns, emptied at every commit."""

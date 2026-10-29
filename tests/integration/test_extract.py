@@ -371,3 +371,17 @@ def test_decimals_and_microseconds_survive_the_trip(
         cur.execute("SELECT amount, attempted_at FROM payments ORDER BY payment_id LIMIT 1")
         assert (amount, attempted_at) == cur.fetchone()
     assert isinstance(amount, Decimal)  # never a float: money stays exact
+
+
+def test_a_load_refreshes_the_planner_statistics(
+    extract_config: ExtractorConfig, source: Connection, warehouse: psycopg.Connection
+) -> None:
+    # reltuples = -1: PostgreSQL has never analyzed the table. A 36-row table
+    # stays that way forever without an explicit ANALYZE (see _analyze).
+    def planner_rows() -> float:
+        query = "SELECT reltuples FROM pg_class WHERE oid = 'raw.line_stops'::regclass"
+        return count(warehouse, query)
+
+    assert planner_rows() == -1
+    run(extract_config, "line_stops", source, warehouse)
+    assert planner_rows() == count(warehouse, "SELECT COUNT(*) FROM raw.line_stops")

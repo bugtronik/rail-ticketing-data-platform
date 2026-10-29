@@ -228,5 +228,10 @@ CREATE TABLE meta.extract_runs (
 
 GRANT USAGE ON SCHEMA raw, meta TO extractor;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA raw TO extractor;
+-- MAINTAIN (PostgreSQL 17+): lets the extractor refresh the planner
+-- statistics (ANALYZE) of the tables it has just loaded, without owning
+-- them (an owner could also drop them).
+-- SQLFluff does not know MAINTAIN yet (PostgreSQL 17): its parse error is ignored.
+GRANT MAINTAIN ON ALL TABLES IN SCHEMA raw TO extractor; -- noqa: PRS
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA meta TO extractor;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA meta TO extractor;
