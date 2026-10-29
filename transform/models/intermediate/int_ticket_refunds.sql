@@ -3,6 +3,7 @@
 SELECT
     ticket_id,
     SUM(amount) FILTER (WHERE refund_status = 'PAID') AS refunded_amount,
-    COUNT(*) FILTER (WHERE refund_status <> 'REJECTED') AS refund_requests
+    COUNT(*) FILTER (WHERE refund_status <> 'REJECTED') AS refund_requests,
+    MAX(_extracted_at) AS _extracted_at
 FROM {{ ref('stg_refunds') }}
 GROUP BY ticket_id

@@ -25,10 +25,19 @@ Click **Lineage** (bottom right) to see how every table is built, from the
   sums, never an average of per-trip ratios (`fct_trip_occupancy`).
 - Anonymous purchases point to customer `-1`.
 
+## History and incremental loading
+
+- `dim_customer` keeps every version of a customer's city and loyalty tier
+  (SCD type 2, from the `snap_customers` snapshot): a sale is analysed with
+  the segment the customer had **when they bought**.
+- `fct_tickets` is incremental: each hourly run rebuilds only the tickets
+  whose ticket, order, trip or refunds changed, and two reconciliation tests
+  check that nothing was missed.
+
 ## Quality
 
 Every model is tested on each run: unique and not-null keys, accepted
 values, relationships between facts and dimensions, a unit test on the
-"paid" rule, and business invariants (sales reconcile with `raw` to the
+"paid" rule, and business invariants (sales and refunds reconcile with `raw` to the
 franc, refunds never exceed the ticket price, load factor between 0 and 1).
 {% enddocs %}

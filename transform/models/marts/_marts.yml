@@ -85,6 +85,8 @@ models:
     description: >
       One row per ticket. Revenue questions: use order_date (date of sale)
       as the main period; departure_date answers "when do they travel".
+      Incremental: each run rebuilds only the tickets whose ticket, order,
+      trip or refunds changed.
     columns:
       - name: ticket_id
         data_tests: [unique, not_null]

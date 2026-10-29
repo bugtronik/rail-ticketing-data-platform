@@ -12,3 +12,8 @@ exclude_rules = AM04, ST06
 [sqlfluff:templater:jinja]
 apply_dbt_builtins = True
 load_macros_from_path = macros
+
+# Linting does not connect to the warehouse: queries that dbt runs while
+# compiling (run_query) are skipped, as dbt itself does when parsing.
+[sqlfluff:templater:jinja:context]
+execute = False

@@ -21,6 +21,9 @@ flags:
 vars:
   # Times are stored in UTC; the business reads them in the network's local time.
   network_timezone: "Africa/Libreville"
+  # Incremental models re-process the changes of the last hour again, in
+  # case a load committed late (see models/marts/fct_tickets.sql).
+  incremental_lookback: "1 hour"
 
 models:
   rail_ticketing:
