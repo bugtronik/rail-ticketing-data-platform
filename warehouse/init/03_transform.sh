@@ -25,4 +25,7 @@ GRANT SELECT ON meta.extract_runs, meta.extract_state TO transformer;
 CREATE SCHEMA staging AUTHORIZATION transformer;
 CREATE SCHEMA intermediate AUTHORIZATION transformer;
 CREATE SCHEMA marts AUTHORIZATION transformer;
+-- History kept by dbt snapshots (SCD type 2). Unlike the other layers, it
+-- cannot be rebuilt from raw: raw only holds the latest version of a row.
+CREATE SCHEMA snapshots AUTHORIZATION transformer;
 EOSQL

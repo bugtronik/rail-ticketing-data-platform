@@ -2,8 +2,8 @@
 # Every target is a thin wrapper: the real commands stay readable below.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lint format up down reset reset-warehouse history ps logs run test \
-	extract extract-status freshness transform docs
+.PHONY: help install lint format up down reset reset-warehouse migrate-warehouse history ps logs run \
+	test extract extract-status freshness transform docs
 
 # dbt reads its connection settings from .env, like the other tools.
 DBT := uv run --env-file .env dbt
@@ -34,13 +34,19 @@ down: ## Stop the stack (data is kept in Docker volumes)
 reset: ## Stop the stack AND delete its data: init scripts re-run on next `up`
 	docker compose down -v
 
-reset-warehouse: ## Recreate an empty warehouse only (the source keeps its data)
+reset-warehouse: ## Recreate an empty warehouse (source kept, customer history LOST)
 	docker compose rm -sf warehouse
 	docker volume rm rail-ticketing_warehouse_data
 	docker compose up -d --wait warehouse
 
 test: ## Run the tests, with connection settings loaded from .env (needs `make up`)
 	uv run --env-file .env pytest
+
+migrate-warehouse: ## Apply warehouse/migrations/ to an existing warehouse (safe to repeat)
+	for f in warehouse/migrations/*.sql; do \
+		echo "$$f"; \
+		docker compose exec -T warehouse sh -c 'psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < "$$f" || exit 1; \
+	done
 
 history: ## Delete ALL data and restart with 2 years of history (~5-10 min)
 	docker compose down -v
