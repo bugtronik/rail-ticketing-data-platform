@@ -79,6 +79,20 @@ the change detection makes the refunds reconciliation fail.
 | Full rebuild (`--full-refresh`) | | 43 s (`fct_tickets`: 16 s) |
 | Tests alone (`dbt test`) | | 18 s |
 
+On the laptop (WSL2, 16 GB RAM), duration of the Airflow `dbt_build` task
+on hourly runs, read from Airflow's database:
+
+| | Before (J6) | After (J7) |
+|---|---|---|
+| `dbt_build` task | 83 s on average (10 runs, 59-131 s) | 59 s on average (3 runs, 55-64 s) |
+
+Both changes of this ADR arrived together on the laptop, so these runs
+cannot tell how much of the 28 % comes from the statistics and how much
+from incremental loading. The test machine, where statistics were already
+up to date before and after, shows almost no change in total time: the
+statistics are the likely cause. Three runs after the change is a small
+sample; J9 measures again over a longer period.
+
 ## Consequences
 
 - **+** Sales keep the customer's segment of the time; the history of

@@ -244,9 +244,11 @@ included). The rules behind each number are in
 `fct_tickets` is **incremental**: each hourly run re-processes only the
 tickets whose ticket, order, trip or refunds changed (0.8 % of the table),
 instead of rewriting 2.5 M rows. Compared row by row with a full rebuild
-after real changes: identical. Measured honestly, it saves write I/O but
-little time at this volume; the big speed-up came from planner statistics
-the raw and mart tables were missing (a model went from 109 s to 16 s).
+after real changes: identical. On the laptop, the hourly `dbt_build` task
+went from 83 s on average (J6, 10 runs, 59-131 s) to 59 s (J7, 3 runs,
+55-64 s). Measured separately on a test machine, most of that gain comes
+from planner statistics the raw and mart tables were missing (a model went
+from 109 s to 16 s); incremental loading mainly saves write I/O.
 Details: [ADR 0008](docs/adr/0008-incremental-models-and-customer-history.md).
 
 `dbt build` runs 143 snapshots, models and tests: keys, accepted values,
