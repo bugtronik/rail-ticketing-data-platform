@@ -12,7 +12,7 @@ All data is synthetic, produced by the project's own generator.
 **📚 [dbt documentation and lineage](https://bugtronik.github.io/rail-ticketing-data-platform/)**:
 every model, column and test, rebuilt by the CI on each push to `main`.
 
-> 🚧 **Work in progress** — current milestone: **J6, end-to-end CI and published dbt docs**.
+> 🚧 **Work in progress** — current milestone: **J7, incremental fact table and customer history (SCD2)**.
 
 ## Architecture
 
@@ -51,7 +51,7 @@ flowchart LR
 - [x] **J4** — dbt dimensional model and tests
 - [x] **J5** — Airflow orchestration, full `docker compose up` (MVP)
 - [x] **J6** — End-to-end CI, published dbt docs
-- [ ] **J7** — Incremental dbt models, customer history (SCD2)
+- [x] **J7** — Incremental dbt models, customer history (SCD2)
 - [ ] **J8** — Power BI dashboard
 - [ ] **J9** — Benchmarks, final documentation
 
@@ -66,6 +66,7 @@ Each significant choice is recorded as an Architecture Decision Record:
 - [ADR 0005 — Incremental extraction: keyset batches, transactional watermark](docs/adr/0005-incremental-extraction-design.md)
 - [ADR 0006 — dbt layers and a star schema with two fact tables](docs/adr/0006-dbt-dimensional-model.md)
 - [ADR 0007 — Orchestration: Airflow 3 calls the project's command-line tools](docs/adr/0007-airflow-orchestration.md)
+- [ADR 0008 — Incremental fact table and customer history (SCD type 2)](docs/adr/0008-incremental-models-and-customer-history.md)
 
 ## Getting started
 
@@ -93,7 +94,10 @@ minutes); the next ones start in under a minute. Then:
 `make history` deletes everything and restarts with 2 years of history.
 `make reset` deletes the data volumes, so the databases are rebuilt from
 their `init/` scripts on the next `make up`; `make reset-warehouse` does it
-for the warehouse only. Other commands: `make help`.
+for the warehouse only (and loses the customer history, which exists nowhere
+else). An existing warehouse is brought up to date with
+`make migrate-warehouse` (`warehouse/migrations/`, safe to repeat). After changing an incremental model, `make run-full` rebuilds it from
+scratch through Airflow. Other commands: `make help`.
 
 For development, the tools also run from the laptop against the same
 databases (they publish their ports on localhost):
@@ -216,7 +220,7 @@ erDiagram
     fct_tickets }o--|| dim_line : ""
     fct_tickets }o--|| dim_station : "origin / destination"
     fct_tickets }o--|| dim_channel : ""
-    fct_tickets }o--|| dim_customer : ""
+    fct_tickets }o--|| dim_customer : "customer_sk (version at order time)"
     fct_tickets }o--|| dim_trip : ""
     fct_trip_occupancy ||--|| dim_trip : ""
     fct_trip_occupancy }o--|| dim_line : ""
@@ -232,12 +236,25 @@ included). The rules behind each number are in
 - a ticket is a sale only if its order was paid (`CONFIRMED`);
 - revenue is reported by **date of sale**; refunds stay attached to the sale;
 - load factor = Σ passenger-km / Σ seat-km on departed trips (a ratio of
-  sums, never an average of ratios).
+  sums, never an average of ratios);
+- a sale is analysed with the customer's segment **at the time of the
+  order**: `dim_customer` keeps every version of a customer's city and
+  loyalty tier (SCD type 2, built by a dbt snapshot).
 
-`dbt build` runs 133 models and tests: keys, accepted values, relationships,
-a unit test on the "paid" rule, and business invariants (sales reconcile to
-the franc with `raw`, refunds never exceed the price, load factor in
-[0, 1]). The key ones were checked by breaking the code on purpose.
+`fct_tickets` is **incremental**: each hourly run re-processes only the
+tickets whose ticket, order, trip or refunds changed (0.8 % of the table),
+instead of rewriting 2.5 M rows. Compared row by row with a full rebuild
+after real changes: identical. Measured honestly, it saves write I/O but
+little time at this volume; the big speed-up came from planner statistics
+the raw and mart tables were missing (a model went from 109 s to 16 s).
+Details: [ADR 0008](docs/adr/0008-incremental-models-and-customer-history.md).
+
+`dbt build` runs 143 snapshots, models and tests: keys, accepted values,
+relationships, a unit test on the "paid" rule, and business invariants
+(sales and refunds reconcile to the franc with `raw`, every source ticket
+is in the fact table, refunds never exceed the price, customer versions
+never overlap, load factor in [0, 1]). The key ones were checked by
+breaking the code on purpose.
 
 What the marts answer, on the 2 years of generated data (2.5 M tickets,
 WSL2 laptop, 16 GB RAM):
