@@ -48,6 +48,19 @@ A test now reproduces it.)
 runs, but the row becomes visible when its transaction commits. Each run
 therefore starts `overlap_minutes` (10) before the watermark.
 
+**Table order: children before parents** *(added in J7)*. The tables are
+read one after the other while the application keeps writing. With orders
+read before tickets, an order placed in between brought its tickets but not
+the order: reproduced locally with live activity during an extraction, 15
+orphan tickets failed the dbt relationship test (the likely cause of an
+end-to-end CI failure after J7). Tables are now
+read children first (refunds, payments, tickets, orders, ...): a parent is
+committed before its children, so it is always there when its table is read
+later. A test checks the order against the source schema's foreign keys.
+The reverse case (an order whose tickets arrive at the next run) is
+harmless: it counts for nothing until then, and the sales reconciliation
+test is computed per ticket for that reason.
+
 **Protecting the source.** Batches of 10,000 rows, a pause between batches,
 a time window outside which the source is not queried at all (and a running
 extraction stops between two batches), the `etl_reader` account limited to 2

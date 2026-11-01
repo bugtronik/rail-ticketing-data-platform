@@ -21,18 +21,26 @@ overlap_minutes = 10
 timezone = "Africa/Libreville"
 window = { start = "00:00", end = "00:00" }
 
-# Tables to extract and their primary key. Order does not matter: the raw
-# layer has no foreign keys. Columns come from the raw table definitions.
+# Tables to extract and their primary key, CHILDREN BEFORE PARENTS.
+#
+# The tables are read one after the other while the application keeps
+# writing. If orders were read before tickets, an order placed in between
+# would bring its tickets but not the order itself: tickets pointing to an
+# order that raw does not have (reproduced: 15 such tickets after one
+# extraction, and the dbt relationship test failed). Reading the children first, any parent a child
+# points to was committed before the child, so it is there when the parent
+# table is read. tests/integration/test_extract.py checks this order
+# against the foreign keys of the source schema.
 tables = [
-    { name = "stations", key = "station_id" },
-    { name = "rail_lines", key = "line_id" },
+    { name = "refunds", key = "refund_id" },
+    { name = "payments", key = "payment_id" },
+    { name = "tickets", key = "ticket_id" },
+    { name = "orders", key = "order_id" },
+    { name = "customers", key = "customer_id" },
+    { name = "sales_channels", key = "channel_id" },
+    { name = "trips", key = "trip_id" },
     { name = "line_stops", key = "line_stop_id" },
     { name = "trains", key = "train_id" },
-    { name = "trips", key = "trip_id" },
-    { name = "sales_channels", key = "channel_id" },
-    { name = "customers", key = "customer_id" },
-    { name = "orders", key = "order_id" },
-    { name = "tickets", key = "ticket_id" },
-    { name = "payments", key = "payment_id" },
-    { name = "refunds", key = "refund_id" },
+    { name = "rail_lines", key = "line_id" },
+    { name = "stations", key = "station_id" },
 ]

@@ -385,3 +385,20 @@ def test_a_load_refreshes_the_planner_statistics(
     assert planner_rows() == -1
     run(extract_config, "line_stops", source, warehouse)
     assert planner_rows() == count(warehouse, "SELECT COUNT(*) FROM raw.line_stops")
+
+
+def test_children_are_extracted_before_their_parents(
+    extract_config: ExtractorConfig, source: Connection
+) -> None:
+    # Read from the source schema itself: a table added later with a new
+    # foreign key is checked too, without updating this test.
+    with source.cursor() as cur:
+        cur.execute(
+            "SELECT table_name, referenced_table_name FROM information_schema.key_column_usage "
+            "WHERE table_schema = DATABASE() AND referenced_table_name IS NOT NULL"
+        )
+        foreign_keys = cur.fetchall()
+    position = {spec.name: i for i, spec in enumerate(extract_config.tables)}
+    assert foreign_keys, "the source schema should have foreign keys"
+    for child, parent in foreign_keys:
+        assert position[child] < position[parent], f"{child} must be extracted before {parent}"
