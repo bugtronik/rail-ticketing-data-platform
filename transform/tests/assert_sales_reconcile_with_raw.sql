@@ -1,10 +1,16 @@
--- Reconciliation: the mart's sales must equal, to the franc, the total of
--- the confirmed orders read straight from raw (bypassing every model).
--- Catches joins that lose or duplicate tickets on the way.
+-- Reconciliation: the mart's sales must equal, to the franc, the price of
+-- the tickets of confirmed orders, read straight from raw (bypassing every
+-- model). Catches joins that lose or duplicate tickets on the way.
+--
+-- Counted per ticket, not with orders.total_amount: the tables are extracted
+-- one after the other while the application writes, so an order created
+-- during an extraction can be in raw before its tickets. It then counts
+-- for 0 on both sides until the next run brings the tickets.
 WITH from_raw AS (
-    SELECT SUM(total_amount) AS amount
-    FROM {{ source('raw', 'orders') }}
-    WHERE order_status = 'CONFIRMED'
+    SELECT SUM(t.price) AS amount
+    FROM {{ source('raw', 'tickets') }} AS t
+    INNER JOIN {{ source('raw', 'orders') }} AS o ON t.order_id = o.order_id
+    WHERE o.order_status = 'CONFIRMED'
 ),
 
 from_mart AS (
