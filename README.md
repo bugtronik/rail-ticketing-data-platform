@@ -25,8 +25,8 @@ flowchart LR
         raw[raw] -->|dbt| stg[staging] -->|dbt| int[intermediate] -->|dbt| marts[marts]
     end
     marts --> pbi[Power BI<br/>dashboard]
-    af{{Airflow<br/>every hour}} -.1. extract.-> ext
-    af -.2. dbt build.-> stg
+    af{{Airflow<br/>every hour}} -.->|"1. extract"| ext
+    af -.->|"2. dbt build"| stg
 ```
 
 ## Stack
