@@ -46,9 +46,12 @@ test: ## Run the tests, with connection settings loaded from .env (needs `make u
 	uv run --env-file .env pytest
 
 migrate-warehouse: ## Apply warehouse/migrations/ to an existing warehouse (safe to repeat)
-	for f in warehouse/migrations/*.sql; do \
+	for f in warehouse/migrations/*; do \
 		echo "$$f"; \
-		docker compose exec -T warehouse sh -c 'psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < "$$f" || exit 1; \
+		case "$$f" in \
+			*.sql) docker compose exec -T warehouse sh -c 'psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < "$$f" ;; \
+			*.sh) docker compose exec -T warehouse bash -s < "$$f" ;; \
+		esac || exit 1; \
 	done
 
 history: ## Delete ALL data and restart with 2 years of history (~5-10 min)
