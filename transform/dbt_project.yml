@@ -39,6 +39,10 @@ models:
       # Fresh planner statistics as soon as a table is (re)built: the next
       # models that join it are planned with its real size (see ADR 0008).
       +post-hook: "ANALYZE {{ this }}"
+      # Power BI's account may read the marts, and only them. dbt grants it
+      # again each time it rebuilds a table (warehouse/init/04_bi_reader.sh).
+      +grants:
+        select: ["bi_reader"]
 
 snapshots:
   rail_ticketing:
