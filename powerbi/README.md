@@ -33,6 +33,24 @@ erDiagram
     dim_line ||--o{ fct_trip_occupancy : "line_id"
 ```
 
+The same 10 relationships, with the column on each side. A dimension keeps
+its own name for the key: `date_day` in `dim_date`, `station_id` in
+`dim_station`. The fact table says which role it plays (`order_date`,
+`origin_station_id`).
+
+| Fact table (many) | Column | Dimension (one) | Column | Active |
+|---|---|---|---|---|
+| `fct_tickets` | `order_date` | `dim_date` | `date_day` | yes |
+| `fct_tickets` | `departure_date` | `dim_date` | `date_day` | **no** |
+| `fct_tickets` | `origin_station_id` | `dim_station` | `station_id` | yes |
+| `fct_tickets` | `destination_station_id` | `dim_station` | `station_id` | **no** |
+| `fct_tickets` | `line_id` | `dim_line` | `line_id` | yes |
+| `fct_tickets` | `channel_id` | `dim_channel` | `channel_id` | yes |
+| `fct_tickets` | `customer_sk` | `dim_customer` | `customer_sk` | yes |
+| `fct_tickets` | `trip_id` | `dim_trip` | `trip_id` | yes |
+| `fct_trip_occupancy` | `departure_date` | `dim_date` | `date_day` | yes |
+| `fct_trip_occupancy` | `line_id` | `dim_line` | `line_id` | yes |
+
 - All relationships are **one-to-many, single direction** (dimension
   filters fact). No bidirectional filter: they make results depend on
   the path Power BI picks.
