@@ -116,6 +116,7 @@ services:
       timeout: 5s
       retries: 30
       start_period: 20s
+    shm_size: 256mb
     deploy:
       resources:
         limits:
