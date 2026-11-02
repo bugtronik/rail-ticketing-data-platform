@@ -22,6 +22,11 @@ logs/
 # Anonymous id for dbt's usage stats (turned off in dbt_project.yml anyway).
 .user.yml
 
+# --- Power BI project (PBIP) ---------------------------------------------------
+# Local cache of the imported data and per-user settings: rebuilt by Desktop.
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
 # --- Airflow ----------------------------------------------------------------
 airflow/logs/
 
