@@ -2,7 +2,7 @@
 # Every target is a thin wrapper: the real commands stay readable below.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lint format up down reset reset-warehouse migrate-warehouse history ps logs run run-full \
+.PHONY: help env install lint format up down reset reset-warehouse migrate-warehouse history ps logs run run-full \
 	test extract extract-status freshness transform transform-full docs
 
 # dbt reads its connection settings from .env, like the other tools.
@@ -12,6 +12,9 @@ DBT_DIRS := --project-dir transform --profiles-dir transform
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+
+env: ## Create .env from .env.example with random passwords (never overwrites)
+	python3 scripts/new_env.py
 
 install: ## Create the virtualenv from uv.lock and install git hooks
 	uv sync
