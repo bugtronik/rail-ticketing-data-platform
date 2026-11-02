@@ -70,17 +70,27 @@ Each significant choice is recorded as an Architecture Decision Record:
 
 ## Getting started
 
-Requirements: Docker (Desktop with WSL2 on Windows), [uv](https://docs.astral.sh/uv/),
-`make`. The running platform uses about 2.4 GB of memory (measured with
-`docker stats`: Airflow ~1.5 GB, the three databases ~0.9 GB).
+Requirements:
+
+- **Docker** with Compose v2. On Windows: Docker Desktop **for Windows**,
+  with *Settings → Resources → WSL integration* enabled for your
+  distribution (do not install Docker Desktop for Linux inside WSL, see
+  [Troubleshooting](#troubleshooting)). About 2.4 GB of memory for the
+  running platform (measured with `docker stats`: Airflow ~1.5 GB, the
+  three databases ~0.9 GB).
+- `git`, `make`, Python 3 and [uv](https://docs.astral.sh/uv/). On Windows,
+  clone the repository **inside WSL** (`~/projects/...`), not under
+  `/mnt/c/`: much faster, and Unix file permissions are kept.
 
 ```bash
-cp .env.example .env   # then change the passwords and secrets
+make env               # .env from .env.example, every password and secret random
 make up                # build the image, start everything, wait until healthy
 ```
 
-The first `make up` builds the image and seeds 90 days of history (a few
-minutes); the next ones start in under a minute. Then:
+Measured on a fresh WSL2 laptop: the first `make up` takes about 11 minutes
+(downloading ~1.5 GB of images and building the pipeline image: 7 min, then
+creating the databases and seeding 90 days of history); the next ones take
+about 2 minutes. Then:
 
 - **Airflow** on <http://127.0.0.1:8080> (or the `AIRFLOW_PORT` set in `.env`,
      if 8080 is already taken on your machine; user `admin`, password
@@ -109,6 +119,18 @@ make extract           # what the DAG's first task does
 make transform         # what its last task does (dbt build)
 make docs              # dbt documentation and lineage on http://localhost:8081
 ```
+
+## Troubleshooting
+
+Problems met while installing the project on a second machine:
+
+| Symptom | Cause and fix |
+|---|---|
+| `make up`: `port is already allocated`, or a web page that "does not work" | Another program uses 3306, 5432 or 8080 (on Windows: `netstat -ano \| findstr ":5432"` in PowerShell). Set `MARIADB_PORT`, `WAREHOUSE_PORT` or `AIRFLOW_PORT` in `.env`. |
+| Every `apt install` in WSL fails on `docker-desktop` (`dpkg --audit` lists it) | Docker Desktop **for Linux** was installed inside WSL. Remove it (`sudo apt purge docker-desktop`) and use Docker Desktop for Windows with WSL integration. |
+| Then `docker: /usr/local/bin/docker: No such file or directory` | bash remembers the old path: `hash -r`, or open a new terminal. |
+| A service restarts in a loop | Check memory: `docker inspect --format '{{.State.OOMKilled}}' <container>`; give Docker more memory (Docker Desktop, *Resources*). |
+| Very slow builds, or scripts that are not executable | The repository is under `/mnt/c/`: clone it inside WSL instead. |
 
 ## Orchestration (Airflow)
 
