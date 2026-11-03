@@ -12,7 +12,19 @@ All data is synthetic, produced by the project's own generator.
 **📚 [dbt documentation and lineage](https://bugtronik.github.io/rail-ticketing-data-platform/)**:
 every model, column and test, rebuilt by the CI on each push to `main`.
 
-> 🚧 **Work in progress** — current milestone: **J8, Power BI dashboard**.
+## Key results
+
+Measured on a WSL2 laptop (16 GB RAM), with 90 days of history plus live
+activity, unless stated otherwise.
+
+| | |
+|---|---|
+| **One command** | `make env && make up` starts the 9 services: ~11 min the first time (image build), 2 to 4 min after |
+| **Hourly pipeline** (16 runs) | median **75 s**, 95th percentile **187 s**: extract 11 s, freshness check 10 s, `dbt build` 41 s (medians) |
+| **Data quality** | 143 dbt nodes pass on every run (119 data tests, 1 unit test), in 44 s on 346,000 tickets; 87 Python tests; the whole platform rebuilt and checked by the CI on every push |
+| **Extraction at scale** (2 years of history) | 6.03 M rows loaded in 167 s; an hourly increment of 845 rows in 0.3 s |
+| **Dashboard** | 3 Power BI pages; the 9 control figures identical in DAX and in SQL, to the franc; refresh in 43 s |
+| **Reliability** | 1 failed run out of 16, during the shared-memory incident below, none since the fix; every task idempotent, `extract` survives a stopped database |
 
 ## Architecture
 
@@ -53,7 +65,7 @@ flowchart LR
 - [x] **J6** — End-to-end CI, published dbt docs
 - [x] **J7** — Incremental dbt models, customer history (SCD2)
 - [x] **J8** — Power BI dashboard
-- [ ] **J9** — Benchmarks, final documentation
+- [x] **J9** — Benchmarks, final documentation
 
 ## Design decisions
 
@@ -92,7 +104,8 @@ make up                # build the image, start everything, wait until healthy
 Measured on a fresh WSL2 laptop: the first `make up` takes about 11 minutes
 (downloading ~1.5 GB of images and building the pipeline image: 7 min, then
 creating the databases and seeding 90 days of history); the next ones take
-about 2 minutes. Then:
+2 to 4 minutes (measured twice: 2 min 14 s and 4 min 00 s, the Airflow
+services being the last to report healthy). Then:
 
 - **Airflow** on <http://127.0.0.1:8080> (or the `AIRFLOW_PORT` set in `.env`,
      if 8080 is already taken on your machine; user `admin`, password
@@ -149,6 +162,13 @@ from its watermark, dbt rebuilds from `raw`, so a retry or a manual re-run
 can never duplicate or lose data. `extract` retries 3 times with exponential
 backoff: tested by stopping MariaDB during a run (attempt 1 fails, attempt 2
 succeeds once the database is back). Details: [ADR 0007](docs/adr/0007-airflow-orchestration.md).
+
+Measured over 16 hourly runs on the laptop: median **75 s**, 95th percentile
+**187 s**, longest 190 s; median per task: `extract` 10.8 s,
+`check_freshness` 10.0 s, `dbt_build` 40.6 s. A sale is therefore in the
+marts at most about one hour and three minutes after it is made. One run
+failed (2 Nov, 12:00 UTC), during the shared-memory incident described in
+[What I learned](#what-i-learned-limitations-and-next-steps); none since.
 
 `docker compose up` starts the services in dependency order:
 
@@ -237,6 +257,18 @@ Measured on a full run (2 years of history):
 | Memory peak | 86 MB (streamed day by day) |
 | Average load factor | 47-56 % depending on the line (≈40 % in February, >70 % in August) |
 | Live mode | one tick every 30 s, ~0.05 s of database work per tick |
+
+**Is every day complete?** Two analyses check it
+([`q6_activity_by_day`](transform/analyses/q6_activity_by_day.sql),
+[`q7_orders_by_month`](transform/analyses/q7_orders_by_month.sql)). On the
+laptop (last 45 days), every day of the history has orders in 23 or 24 hours
+of the day, with silences under 2 hours; the live days do not, because the generator only
+runs while the laptop does (3 Nov: orders in 7 hours, after a 15.7-hour
+silence overnight). And the drop the dashboard showed in J8 (net revenue
+-12 % over 30 days) is the seasonality built into the generator, not a data
+problem: orders per day fall from 2,768 in August to 2,141 in September
+(-23 %) and 1,851 in October (-14 %), for configured month factors of 1.35,
+1.10 and 0.90.
 
 ## Incremental extraction
 
