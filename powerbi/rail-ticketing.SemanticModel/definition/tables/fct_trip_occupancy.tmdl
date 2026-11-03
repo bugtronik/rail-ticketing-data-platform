@@ -1,0 +1,128 @@
+table fct_trip_occupancy
+	lineageTag: 6ee34ee1-7c46-4483-9afc-7bc2727707c7
+
+	column trip_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 0dc8cd27-d547-4c16-bc29-bf76ae5cf326
+		summarizeBy: none
+		sourceColumn: trip_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column line_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 940efbc8-eccb-47c4-bc4f-0b31d03f9391
+		summarizeBy: none
+		sourceColumn: line_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column departure_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 09f9f7ec-ee03-47c0-bca4-995c294742c9
+		summarizeBy: none
+		sourceColumn: departure_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column departure_hour
+		dataType: int64
+		formatString: 0
+		lineageTag: fda6248a-c345-427e-b21f-3e43ff67b956
+		summarizeBy: none
+		sourceColumn: departure_hour
+
+		annotation SummarizationSetBy = Automatic
+
+	column direction
+		dataType: string
+		lineageTag: 8f00d2a1-e74e-4aaa-9033-6d51dec24b60
+		summarizeBy: none
+		sourceColumn: direction
+
+		annotation SummarizationSetBy = Automatic
+
+	column trip_status
+		dataType: string
+		lineageTag: dc798316-1956-4d45-b1a4-db6fc380825d
+		summarizeBy: none
+		sourceColumn: trip_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column seats_offered
+		dataType: int64
+		formatString: 0
+		lineageTag: 5b629b4e-3053-4b5a-a784-90e7de4afdfd
+		summarizeBy: sum
+		sourceColumn: seats_offered
+
+		annotation SummarizationSetBy = Automatic
+
+	column seat_km
+		dataType: double
+		lineageTag: 16a55203-661b-4ba2-9109-b0f7ccc04e6b
+		summarizeBy: sum
+		sourceColumn: seat_km
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column tickets_sold
+		dataType: int64
+		formatString: 0
+		lineageTag: 3b83f67d-8d4c-40ae-909f-f8b8e5e9553f
+		summarizeBy: sum
+		sourceColumn: tickets_sold
+
+		annotation SummarizationSetBy = Automatic
+
+	column passenger_km
+		dataType: double
+		lineageTag: 3efa7685-cced-4149-9d56-b80a1baa4fee
+		summarizeBy: sum
+		sourceColumn: passenger_km
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column load_factor
+		dataType: double
+		isHidden
+		lineageTag: 260dc960-4a1b-4e26-b805-cd9412ce0f13
+		summarizeBy: none
+		sourceColumn: load_factor
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Libellé français de direction, pour l'affichage.
+	column Sens = SWITCH ( fct_trip_occupancy[direction], "OUTBOUND", "Aller", "RETURN", "Retour", fct_trip_occupancy[direction] )
+		dataType: string
+		lineageTag: 1dc1d6ff-0a13-4b45-b430-c111fc17fdea
+		summarizeBy: none
+
+	partition fct_trip_occupancy = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database(WarehouseServer, WarehouseDatabase),
+				  #"Navigation 1" = Source{[Schema = "marts", Item = "fct_trip_occupancy"]}[Data]
+				in
+				  #"Navigation 1"
+
+	annotation PBI_ResultType = Table

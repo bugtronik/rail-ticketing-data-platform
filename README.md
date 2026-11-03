@@ -12,7 +12,7 @@ All data is synthetic, produced by the project's own generator.
 **📚 [dbt documentation and lineage](https://bugtronik.github.io/rail-ticketing-data-platform/)**:
 every model, column and test, rebuilt by the CI on each push to `main`.
 
-> 🚧 **Work in progress** — current milestone: **J7, incremental fact table and customer history (SCD2)**.
+> 🚧 **Work in progress** — current milestone: **J8, Power BI dashboard**.
 
 ## Architecture
 
@@ -52,7 +52,7 @@ flowchart LR
 - [x] **J5** — Airflow orchestration, full `docker compose up` (MVP)
 - [x] **J6** — End-to-end CI, published dbt docs
 - [x] **J7** — Incremental dbt models, customer history (SCD2)
-- [ ] **J8** — Power BI dashboard
+- [x] **J8** — Power BI dashboard
 - [ ] **J9** — Benchmarks, final documentation
 
 ## Design decisions
@@ -67,6 +67,7 @@ Each significant choice is recorded as an Architecture Decision Record:
 - [ADR 0006 — dbt layers and a star schema with two fact tables](docs/adr/0006-dbt-dimensional-model.md)
 - [ADR 0007 — Orchestration: Airflow 3 calls the project's command-line tools](docs/adr/0007-airflow-orchestration.md)
 - [ADR 0008 — Incremental fact table and customer history (SCD type 2)](docs/adr/0008-incremental-models-and-customer-history.md)
+- [ADR 0009 — Power BI on the marts: read-only account, import mode, ratios in DAX](docs/adr/0009-power-bi-layer.md)
 
 ## Getting started
 
@@ -96,8 +97,9 @@ about 2 minutes. Then:
      if 8080 is already taken on your machine; user `admin`, password
   `AIRFLOW_ADMIN_PASSWORD` from `.env`): the `rail_ticketing_pipeline` DAG
   starts on its own and runs every hour; `make run` triggers it now.
-- **The warehouse** on `localhost:5432` (`marts` schema), for SQL clients
-  and Power BI.
+- **The warehouse** on `localhost:5432` (or `WAREHOUSE_PORT`): the `marts`
+  schema, read by Power BI with the `bi_reader` account (`BI_READER_PASSWORD`
+  in `.env`).
 - `make logs` follows the generator and the scheduler; `make ps` shows the
   state of every service.
 
@@ -163,6 +165,31 @@ A manual run in the Airflow UI: `extract` succeeded at its second attempt
 went through without any intervention.
 
 ![Airflow: a DAG run whose extract task succeeded on retry](docs/images/airflow-dag-run.png)
+
+## Dashboard (Power BI)
+
+Three pages on the `marts` schema, read with the `bi_reader` account (it can
+read the marts and nothing else). The report is versioned as a Power BI
+project in [`powerbi/`](powerbi/), where the model and every DAX measure are
+documented; each card's value is checked against a SQL query
+([`dashboard_checks.sql`](transform/analyses/dashboard_checks.sql)).
+
+**Sales**, by date of sale: revenue by line and month, average ticket
+price, cancellations and refunds.
+
+![Power BI: sales page](docs/images/dashboard-sales.png)
+
+**Load factor**: passenger-km over seat-km on departed trips, by line and
+month (a ratio of sums, computed by DAX in each visual).
+
+![Power BI: load factor page](docs/images/dashboard-load-factor.png)
+
+**Channels and peak hours**: share of each sales channel and of online
+sales over time, purchases by hour, departures by hour.
+
+![Power BI: channels and peak hours page](docs/images/dashboard-channels.png)
+
+Details: [ADR 0009](docs/adr/0009-power-bi-layer.md).
 
 ## Continuous integration
 

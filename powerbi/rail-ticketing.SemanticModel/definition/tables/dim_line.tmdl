@@ -1,0 +1,65 @@
+table dim_line
+	lineageTag: 4907b420-aa37-451e-b122-f68c2fb3dad7
+
+	column line_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 7b94f1e9-9a89-46e8-98c3-c5bbc38e1b79
+		summarizeBy: none
+		sourceColumn: line_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column line_code
+		dataType: string
+		lineageTag: 184ddd6a-f94d-4e6f-b611-e27431eb8550
+		summarizeBy: none
+		sourceColumn: line_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column line_name
+		dataType: string
+		lineageTag: 523f48c1-3cfc-4fa1-ac70-bc29aa3f43d0
+		summarizeBy: none
+		sourceColumn: line_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column service_type
+		dataType: string
+		lineageTag: 98eece07-be8f-41c9-93be-09022a109369
+		summarizeBy: none
+		sourceColumn: service_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column stop_count
+		dataType: int64
+		formatString: 0
+		lineageTag: abd1a88f-1363-468e-82f8-c4e9bd0a12ef
+		summarizeBy: none
+		sourceColumn: stop_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column length_km
+		dataType: double
+		lineageTag: 924a0510-a639-4fef-a173-19dc8b1a75f9
+		summarizeBy: none
+		sourceColumn: length_km
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition dim_line = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database(WarehouseServer, WarehouseDatabase),
+				  #"Navigation 1" = Source{[Schema = "marts", Item = "dim_line"]}[Data]
+				in
+				  #"Navigation 1"
+
+	annotation PBI_ResultType = Table

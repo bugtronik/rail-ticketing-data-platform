@@ -1,0 +1,47 @@
+table dim_channel
+	lineageTag: 4bc892db-041b-40e5-a554-ed3c40ca3b3c
+
+	column channel_id
+		dataType: int64
+		formatString: 0
+		lineageTag: c1d3561d-c726-47ba-be35-bfc97a587bcf
+		summarizeBy: none
+		sourceColumn: channel_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel_code
+		dataType: string
+		lineageTag: 093b334d-0e73-4fe0-bd10-a4be3b6ce043
+		summarizeBy: none
+		sourceColumn: channel_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel_name
+		dataType: string
+		lineageTag: 1b0b2853-46ac-423b-997a-a7692f43a94b
+		summarizeBy: none
+		sourceColumn: channel_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_online
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3791cfd9-ef0c-4ff0-b9d5-2e10c0a2b01c
+		summarizeBy: none
+		sourceColumn: is_online
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_channel = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database(WarehouseServer, WarehouseDatabase),
+				  #"Navigation 1" = Source{[Schema = "marts", Item = "dim_channel"]}[Data]
+				in
+				  #"Navigation 1"
+
+	annotation PBI_ResultType = Table

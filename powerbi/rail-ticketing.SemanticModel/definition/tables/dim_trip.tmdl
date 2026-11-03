@@ -1,0 +1,109 @@
+table dim_trip
+	lineageTag: 39797d0d-f552-425a-b2fd-f54b3e74b531
+
+	column trip_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 61b97474-e0e0-40d0-aad1-daee8718034c
+		summarizeBy: none
+		sourceColumn: trip_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column service_number
+		dataType: string
+		lineageTag: d4e3ba93-7515-4498-9689-32f627c19884
+		summarizeBy: none
+		sourceColumn: service_number
+
+		annotation SummarizationSetBy = Automatic
+
+	column line_id
+		dataType: int64
+		formatString: 0
+		lineageTag: e933badd-ebe9-44b2-8966-265cd6663535
+		summarizeBy: none
+		sourceColumn: line_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column direction
+		dataType: string
+		lineageTag: 5efef3f8-a888-49ae-a8b7-8c655a163768
+		summarizeBy: none
+		sourceColumn: direction
+
+		annotation SummarizationSetBy = Automatic
+
+	column trip_status
+		dataType: string
+		lineageTag: 198d8c34-47ae-4906-a3d6-3fdae6b70ba9
+		summarizeBy: none
+		sourceColumn: trip_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column departure_at_local
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 8d4f2191-88ba-4aab-a3ab-0e1c36068dae
+		summarizeBy: none
+		sourceColumn: departure_at_local
+
+		annotation SummarizationSetBy = Automatic
+
+	column departure_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 25b3bd2d-7c14-4c02-a26e-77930e6e354a
+		summarizeBy: none
+		sourceColumn: departure_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column departure_hour
+		dataType: int64
+		formatString: 0
+		lineageTag: 1b5c69f8-0fe9-4758-a03b-0c8383eb54ca
+		summarizeBy: none
+		sourceColumn: departure_hour
+
+		annotation SummarizationSetBy = Automatic
+
+	column train_code
+		dataType: string
+		lineageTag: 709721f7-d6bd-4159-83e1-63e0e8c4f659
+		summarizeBy: none
+		sourceColumn: train_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column train_model
+		dataType: string
+		lineageTag: b3f109b1-687e-4af8-8e89-32bc93d64608
+		summarizeBy: none
+		sourceColumn: train_model
+
+		annotation SummarizationSetBy = Automatic
+
+	column seats_total
+		dataType: int64
+		formatString: 0
+		lineageTag: 18d1a0d9-f2a8-401a-b43e-9dee2074c049
+		summarizeBy: none
+		sourceColumn: seats_total
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_trip = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database(WarehouseServer, WarehouseDatabase),
+				  #"Navigation 1" = Source{[Schema = "marts", Item = "dim_trip"]}[Data]
+				in
+				  #"Navigation 1"
+
+	annotation PBI_ResultType = Table

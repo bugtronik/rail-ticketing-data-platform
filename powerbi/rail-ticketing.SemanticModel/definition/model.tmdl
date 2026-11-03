@@ -1,0 +1,26 @@
+model Model
+	culture: fr-FR
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: fr-FR
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["WarehouseServer","WarehouseDatabase","dim_channel","dim_customer","dim_date","dim_line","dim_station","dim_trip","fct_tickets","fct_trip_occupancy","Mesures"]
+
+annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling"]
+
+ref table dim_channel
+ref table dim_customer
+ref table dim_date
+ref table dim_line
+ref table dim_station
+ref table dim_trip
+ref table fct_tickets
+ref table fct_trip_occupancy
+ref table Mesures
+
+ref cultureInfo fr-FR

@@ -1,0 +1,705 @@
+table Mesures
+	lineageTag: a4c576f4-860c-4b17-8611-531aa87dbcf2
+
+	measure 'Billets vendus' = CALCULATE ( COUNTROWS ( fct_tickets ), fct_tickets[is_paid] = TRUE () )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: d5ec3a15-186e-4f2f-b40c-16bdc291e647
+
+	measure 'Billets annulés' = CALCULATE ( COUNTROWS ( fct_tickets ), fct_tickets[is_cancelled] = TRUE () )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: bf78f205-abe2-4df9-9b62-44ec4617fd5b
+
+	measure 'CA brut' = SUM ( fct_tickets[sales_amount] )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: 8c6ca11d-3238-4d2d-bee2-aa87fafcacea
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Remboursements = SUM ( fct_tickets[refunded_amount] )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: 1bc7d660-a88b-4abf-9042-d4fd5494356b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'CA net' = SUM ( fct_tickets[net_sales_amount] )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: 84067d48-1de8-45fd-9965-569a6d1d8bc5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Prix moyen du billet' = DIVIDE ( [CA brut], [Billets vendus] )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: d1c4244a-65a8-4c02-be96-c9dac3cd9ff8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Taux d''annulation' = DIVIDE ( [Billets annulés], [Billets vendus] )
+		formatString: 0.0%
+		displayFolder: 1. Ventes
+		lineageTag: 7b122241-c9b0-4531-b3ea-e2ac3136c91a
+
+	measure 'Taux de remboursement' = DIVIDE ( [Remboursements], [CA brut] )
+		formatString: 0.0%
+		displayFolder: 1. Ventes
+		lineageTag: 9f4df766-e464-4c1b-9e3e-9ce3deea4e06
+
+	measure 'Part du CA en ligne' = DIVIDE ( CALCULATE ( [CA brut], KEEPFILTERS ( dim_channel[is_online] = TRUE () ) ), [CA brut] )
+		formatString: 0.0%
+		displayFolder: 1. Ventes
+		lineageTag: d6b98d29-f998-48c1-afda-520caae5043c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'CA par date de voyage' = CALCULATE ( [CA brut], USERELATIONSHIP ( fct_tickets[departure_date], dim_date[date_day] ) )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: 8b60230c-e7ef-4ea0-8c98-88d55b83a2bf
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Passagers-km = CALCULATE ( SUM ( fct_trip_occupancy[passenger_km] ), fct_trip_occupancy[trip_status] = "COMPLETED" )
+		formatString: #,0
+		displayFolder: 2. Exploitation
+		lineageTag: e39c7aa0-bb37-41a0-bc18-48cef3fc9f74
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Sièges-km = CALCULATE ( SUM ( fct_trip_occupancy[seat_km] ), fct_trip_occupancy[trip_status] = "COMPLETED" )
+		formatString: #,0
+		displayFolder: 2. Exploitation
+		lineageTag: eda0e385-09be-4255-91e9-d55c88e3efdf
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Taux de remplissage' = DIVIDE ( [Passagers-km], [Sièges-km] )
+		formatString: 0.0%
+		displayFolder: 2. Exploitation
+		lineageTag: dda6063e-a476-4c12-97e5-bf8ee52260e4
+
+	/// Ventes payées sur le site web et l'application mobile.
+	measure 'CA brut en ligne' = CALCULATE ( [CA brut], KEEPFILTERS ( dim_channel[is_online] = TRUE () ) )
+		formatString: #,0
+		displayFolder: 1. Ventes
+		lineageTag: b7b2968a-e384-58b1-8130-c55a18550f19
+
+	measure 'Billets par commande' =
+			VAR _commandes = CALCULATE ( DISTINCTCOUNT ( fct_tickets[order_id] ), fct_tickets[is_paid] = TRUE () )
+			RETURN DIVIDE ( [Billets vendus], _commandes )
+		formatString: 0.00
+		displayFolder: 1. Ventes
+		lineageTag: 237d12ed-db0f-53e5-86ad-48429dfecd84
+
+	/// Nombre moyen de jours entre l'achat et le départ du train.
+	measure 'Anticipation moyenne (jours)' =
+			CALCULATE (
+			    AVERAGEX ( fct_tickets, DATEDIFF ( fct_tickets[order_date], fct_tickets[departure_date], DAY ) ),
+			    fct_tickets[is_paid] = TRUE ()
+			)
+		formatString: 0.0
+		displayFolder: 1. Ventes
+		lineageTag: f6e4ace3-0177-552c-a1b7-b9d016e5a2ea
+
+	measure 'Trajets réalisés' = CALCULATE ( COUNTROWS ( fct_trip_occupancy ), fct_trip_occupancy[trip_status] = "COMPLETED" )
+		formatString: #,0
+		displayFolder: 2. Exploitation
+		lineageTag: 6a6ac170-76dd-5771-9ea2-3339749d6b81
+
+	measure 'Trajets annulés' = CALCULATE ( COUNTROWS ( fct_trip_occupancy ), fct_trip_occupancy[trip_status] = "CANCELLED" )
+		formatString: #,0
+		displayFolder: 2. Exploitation
+		lineageTag: 33b51031-efbb-5b4f-9603-5475eef0f075
+
+	measure 'Taux d''annulation des trajets' = DIVIDE ( [Trajets annulés], [Trajets réalisés] + [Trajets annulés] )
+		formatString: 0.0%
+		displayFolder: 2. Exploitation
+		lineageTag: f37d5dd5-47aa-5d2a-aef7-331c3a54bd98
+
+	measure 'Voyageurs moyens par train' =
+			VAR _voyageurs = CALCULATE ( SUM ( fct_trip_occupancy[tickets_sold] ), fct_trip_occupancy[trip_status] = "COMPLETED" )
+			RETURN DIVIDE ( _voyageurs, [Trajets réalisés] )
+		formatString: #,0
+		displayFolder: 2. Exploitation
+		lineageTag: 9d31c52f-1708-55ea-bce7-89a988f67f00
+
+	/// La veille du dernier jour de vente : le jour en cours est incomplet.
+	measure 'Dernier jour complet' = CALCULATE ( MAX ( fct_tickets[order_date] ), REMOVEFILTERS () ) - 1
+		formatString: dd/mm/yyyy
+		displayFolder: 4. Contexte
+		lineageTag: 646813fb-68a8-55b9-8b88-539052ec2219
+
+	measure 'Libellé période 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN
+			    "30 derniers jours complets : du " & FORMAT ( _fin - 29, "dd/mm/yyyy" ) & " au "
+			        & FORMAT ( _fin, "dd/mm/yyyy" ) & ", comparés aux 30 jours précédents"
+		displayFolder: 4. Contexte
+		lineageTag: 8fc24cc6-6be2-5331-9a6c-8985aacfb0a6
+
+	measure 'Libellé fraîcheur' =
+			VAR _charge = CALCULATE ( MAX ( fct_tickets[_loaded_at] ), REMOVEFILTERS () )
+			RETURN "Données chargées le " & FORMAT ( _charge, "dd/mm/yyyy à hh:nn" ) & " (UTC)"
+		displayFolder: 4. Contexte
+		lineageTag: f2c5adb9-011d-5d5e-8ab8-47f438f40386
+
+	measure 'CA net quotidien' = IF ( MAX ( dim_date[date_day] ) <= [Dernier jour complet], [CA net] )
+		formatString: #,0
+		displayFolder: 5. Tendances
+		lineageTag: 7086e821-cd2f-5a2e-90c3-03b81edfb72e
+
+	measure 'CA net moyenne mobile 7 j' =
+			VAR _jour = MAX ( dim_date[date_day] )
+			RETURN
+			    IF (
+			        _jour <= [Dernier jour complet],
+			        AVERAGEX ( DATESINPERIOD ( dim_date[date_day], _jour, -7, DAY ), [CA net] )
+			    )
+		formatString: #,0
+		displayFolder: 5. Tendances
+		lineageTag: e3145988-7db8-57c4-a4c5-bac42618e7f1
+
+	measure 'Taux de remplissage moyenne mobile 7 j' =
+			VAR _jour = MAX ( dim_date[date_day] )
+			RETURN
+			    IF (
+			        _jour <= [Dernier jour complet],
+			        CALCULATE ( [Taux de remplissage], DATESINPERIOD ( dim_date[date_day], _jour, -7, DAY ) )
+			    )
+		formatString: 0.0%
+		displayFolder: 5. Tendances
+		lineageTag: 57241233-703f-52bd-ba06-348fc2b2547e
+
+	measure 'Part du CA en ligne moyenne mobile 7 j' =
+			VAR _jour = MAX ( dim_date[date_day] )
+			RETURN
+			    IF (
+			        _jour <= [Dernier jour complet],
+			        CALCULATE ( [Part du CA en ligne], DATESINPERIOD ( dim_date[date_day], _jour, -7, DAY ) )
+			    )
+		formatString: 0.0%
+		displayFolder: 5. Tendances
+		lineageTag: b3c6ef15-88f3-5f33-a74c-f7864b4f2751
+
+	measure 'CA net 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [CA net], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: 260452cb-5e72-5a54-ab34-f002dfa82402
+
+	measure 'CA net 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [CA net], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 841010ae-ca07-5450-b28f-8c43816a718b
+
+	measure 'Évol. CA net 30 j' = DIVIDE ( [CA net 30 j] - [CA net 30 j préc.], [CA net 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 9b7fa548-6e31-5330-8c1c-e25f3cfde058
+
+	measure 'Évol. CA net 30 j (texte)' =
+			VAR _evol = [Évol. CA net 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 56ecb2ed-75af-5dca-9ff4-66e8c38646c5
+
+	measure 'Évol. CA net 30 j (couleur)' =
+			VAR _evol = [Évol. CA net 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: ddaf454a-3bd8-50b8-861b-409ade60458d
+
+	measure 'Billets vendus 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Billets vendus], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: aac9fb84-0d89-56ce-9213-f016f7dfe4f0
+
+	measure 'Billets vendus 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Billets vendus], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 1974e1dd-caff-5b7e-bee2-0f81de7628ed
+
+	measure 'Évol. Billets vendus 30 j' = DIVIDE ( [Billets vendus 30 j] - [Billets vendus 30 j préc.], [Billets vendus 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 1a18d45d-21d6-5e29-b29a-cdb5c99812e4
+
+	measure 'Évol. Billets vendus 30 j (texte)' =
+			VAR _evol = [Évol. Billets vendus 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: a7f4da96-5945-5d11-9b29-7f7aac868c23
+
+	measure 'Évol. Billets vendus 30 j (couleur)' =
+			VAR _evol = [Évol. Billets vendus 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 4ea4b0d2-d67c-5db9-a389-b5b5d372afd4
+
+	measure 'Prix moyen du billet 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Prix moyen du billet], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: a9d7ed5d-cf5f-5a30-80ed-c0a6ab37082a
+
+	measure 'Prix moyen du billet 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Prix moyen du billet], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: ba9e0a92-4366-578d-88bf-854852f1c914
+
+	measure 'Évol. Prix moyen du billet 30 j' = DIVIDE ( [Prix moyen du billet 30 j] - [Prix moyen du billet 30 j préc.], [Prix moyen du billet 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 449e8808-b8e9-5e51-8e58-1d995c461cd2
+
+	measure 'Évol. Prix moyen du billet 30 j (texte)' =
+			VAR _evol = [Évol. Prix moyen du billet 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: f9b57498-1721-5fb6-a5a5-65eeb271362a
+
+	measure 'Évol. Prix moyen du billet 30 j (couleur)' =
+			VAR _evol = [Évol. Prix moyen du billet 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 970ee242-c8f1-5041-a731-c36423dfe63f
+
+	measure 'Taux d''annulation 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Taux d'annulation], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: 4b0791f5-18e9-5916-8a90-da549f059eee
+
+	measure 'Taux d''annulation 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Taux d'annulation], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 4b913cc0-bc8b-54d9-a092-f6fb8767f780
+
+	/// Écart en points de pourcentage.
+	measure 'Évol. Taux d''annulation 30 j' = IF ( NOT ISBLANK ( [Taux d'annulation 30 j préc.] ), ( [Taux d'annulation 30 j] - [Taux d'annulation 30 j préc.] ) * 100 )
+		formatString: +0.0;-0.0;0.0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: f325b0ed-0202-53b1-b702-802090c1b7c7
+
+	measure 'Évol. Taux d''annulation 30 j (texte)' =
+			VAR _evol = [Évol. Taux d'annulation 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0" ) & " pt" & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: afe53640-3a04-5500-affa-b0b7e9e9bbc3
+
+	measure 'Évol. Taux d''annulation 30 j (couleur)' =
+			VAR _evol = [Évol. Taux d'annulation 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#C62828", "#1E7B45" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 459c37b0-e047-5498-978c-89ffc80623d6
+
+	measure 'Part du CA en ligne 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Part du CA en ligne], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: 85256a7f-d23e-5641-9791-33197df51066
+
+	measure 'Part du CA en ligne 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Part du CA en ligne], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 16c17cdd-c360-5ec8-a291-065a4daa6d20
+
+	/// Écart en points de pourcentage.
+	measure 'Évol. Part du CA en ligne 30 j' = IF ( NOT ISBLANK ( [Part du CA en ligne 30 j préc.] ), ( [Part du CA en ligne 30 j] - [Part du CA en ligne 30 j préc.] ) * 100 )
+		formatString: +0.0;-0.0;0.0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 29677b0e-14b9-5504-93e6-31279d1e0fe3
+
+	measure 'Évol. Part du CA en ligne 30 j (texte)' =
+			VAR _evol = [Évol. Part du CA en ligne 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0" ) & " pt" & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 64899bf0-eb9a-57b7-be43-33cda15ed97d
+
+	measure 'Évol. Part du CA en ligne 30 j (couleur)' =
+			VAR _evol = [Évol. Part du CA en ligne 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 4b323a5e-7957-5646-89a0-172f15cde906
+
+	measure 'Taux de remplissage 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Taux de remplissage], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: 86063685-5eac-576b-a366-32e9e9e1119f
+
+	measure 'Taux de remplissage 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Taux de remplissage], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 12355dbc-cbf3-506f-80c5-db02ae816d2e
+
+	/// Écart en points de pourcentage.
+	measure 'Évol. Taux de remplissage 30 j' = IF ( NOT ISBLANK ( [Taux de remplissage 30 j préc.] ), ( [Taux de remplissage 30 j] - [Taux de remplissage 30 j préc.] ) * 100 )
+		formatString: +0.0;-0.0;0.0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: bc388f69-a628-5a52-99b3-611c2da17fcc
+
+	measure 'Évol. Taux de remplissage 30 j (texte)' =
+			VAR _evol = [Évol. Taux de remplissage 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0" ) & " pt" & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 16abf8c9-d318-5ec1-b36b-b3d99a502aed
+
+	measure 'Évol. Taux de remplissage 30 j (couleur)' =
+			VAR _evol = [Évol. Taux de remplissage 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: bb4bbfbb-19f3-5894-bf69-7fe392ea6963
+
+	measure 'Trajets réalisés 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Trajets réalisés], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: 718c4220-1dcb-5acb-8e6c-5bdaa42ef277
+
+	measure 'Trajets réalisés 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Trajets réalisés], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: aeeb93b6-6ed8-565b-8eb8-349c46965a2a
+
+	measure 'Évol. Trajets réalisés 30 j' = DIVIDE ( [Trajets réalisés 30 j] - [Trajets réalisés 30 j préc.], [Trajets réalisés 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 7a138334-7e3e-535a-add8-8cce58466187
+
+	measure 'Évol. Trajets réalisés 30 j (texte)' =
+			VAR _evol = [Évol. Trajets réalisés 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: a92f4dc4-9179-5e36-b6e3-7f1020f836ec
+
+	measure 'Évol. Trajets réalisés 30 j (couleur)' =
+			VAR _evol = [Évol. Trajets réalisés 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 20f70ab8-fce9-5dac-a16d-e02ed08d6cba
+
+	measure 'Taux d''annulation des trajets 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Taux d'annulation des trajets], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: 89d455a2-1a93-5389-89c7-f57274ab745c
+
+	measure 'Taux d''annulation des trajets 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Taux d'annulation des trajets], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: c7a58d9c-320b-5077-8950-ecb9b5cc3d6a
+
+	/// Écart en points de pourcentage.
+	measure 'Évol. Taux d''annulation des trajets 30 j' = IF ( NOT ISBLANK ( [Taux d'annulation des trajets 30 j préc.] ), ( [Taux d'annulation des trajets 30 j] - [Taux d'annulation des trajets 30 j préc.] ) * 100 )
+		formatString: +0.0;-0.0;0.0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 7eb82aaf-ded7-50cd-ab33-cde364fc96c8
+
+	measure 'Évol. Taux d''annulation des trajets 30 j (texte)' =
+			VAR _evol = [Évol. Taux d'annulation des trajets 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0" ) & " pt" & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 391487b9-edc9-517b-9a1c-74213f615f02
+
+	measure 'Évol. Taux d''annulation des trajets 30 j (couleur)' =
+			VAR _evol = [Évol. Taux d'annulation des trajets 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#C62828", "#1E7B45" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 93915355-f19b-5815-bb0f-6b33e4e0cd2f
+
+	measure 'Voyageurs moyens par train 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Voyageurs moyens par train], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: ae53b5ff-1c92-59e9-85be-d40c3e71040a
+
+	measure 'Voyageurs moyens par train 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Voyageurs moyens par train], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: a16e4e35-92dd-5ec8-b392-447840084894
+
+	measure 'Évol. Voyageurs moyens par train 30 j' = DIVIDE ( [Voyageurs moyens par train 30 j] - [Voyageurs moyens par train 30 j préc.], [Voyageurs moyens par train 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 4c00e66a-ab44-5eae-b54c-eeb188d17ada
+
+	measure 'Évol. Voyageurs moyens par train 30 j (texte)' =
+			VAR _evol = [Évol. Voyageurs moyens par train 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 706ed207-449c-579d-9e7a-044f355b1c9c
+
+	measure 'Évol. Voyageurs moyens par train 30 j (couleur)' =
+			VAR _evol = [Évol. Voyageurs moyens par train 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 99838b48-1042-5f56-8535-70ef5bd4986b
+
+	measure 'Passagers-km 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Passagers-km], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: d8221bc6-ec83-5ca4-aa81-386c3cea143e
+
+	measure 'Passagers-km 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Passagers-km], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: d0039915-3d06-5213-aa41-bea698c493d5
+
+	measure 'Évol. Passagers-km 30 j' = DIVIDE ( [Passagers-km 30 j] - [Passagers-km 30 j préc.], [Passagers-km 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 54b8f8be-2ee0-5654-a28e-03b2973d19d9
+
+	measure 'Évol. Passagers-km 30 j (texte)' =
+			VAR _evol = [Évol. Passagers-km 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 7875877b-e33d-568f-9768-8159d0722452
+
+	measure 'Évol. Passagers-km 30 j (couleur)' =
+			VAR _evol = [Évol. Passagers-km 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: bca77334-df38-55fe-aa60-492c7ddaa38c
+
+	measure 'CA brut en ligne 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [CA brut en ligne], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: b02f45df-c576-5759-a57d-cdb0acf7ce9f
+
+	measure 'CA brut en ligne 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [CA brut en ligne], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: #,0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 05f2c2fe-db99-55da-8792-191e709151f3
+
+	measure 'Évol. CA brut en ligne 30 j' = DIVIDE ( [CA brut en ligne 30 j] - [CA brut en ligne 30 j préc.], [CA brut en ligne 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 5d76c03a-be93-5792-9d7a-8a0a9f279829
+
+	measure 'Évol. CA brut en ligne 30 j (texte)' =
+			VAR _evol = [Évol. CA brut en ligne 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 4200f40f-3f1f-58f0-bac9-d2ceea6536c2
+
+	measure 'Évol. CA brut en ligne 30 j (couleur)' =
+			VAR _evol = [Évol. CA brut en ligne 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 9eda926c-c1e1-5980-bc3d-010cec39dc08
+
+	measure 'Billets par commande 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Billets par commande], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.00
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: ed253110-b78f-5fb6-9af2-a52558bff937
+
+	measure 'Billets par commande 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Billets par commande], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.00
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 0fbc8562-706b-54b4-8169-3b9b85538d44
+
+	measure 'Évol. Billets par commande 30 j' = DIVIDE ( [Billets par commande 30 j] - [Billets par commande 30 j préc.], [Billets par commande 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 2862e0df-f3c4-55ec-b650-f4cb07e06da1
+
+	measure 'Évol. Billets par commande 30 j (texte)' =
+			VAR _evol = [Évol. Billets par commande 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 3fb2448b-f15c-5083-ae09-90512601c07b
+
+	measure 'Évol. Billets par commande 30 j (couleur)' =
+			VAR _evol = [Évol. Billets par commande 30 j]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _evol ), "#8589B3", _evol >= 0, "#1E7B45", "#C62828" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: c41e374f-09d3-5f09-9df2-8efc1aa6c093
+
+	measure 'Anticipation moyenne (jours) 30 j' =
+			VAR _fin = [Dernier jour complet]
+			RETURN CALCULATE ( [Anticipation moyenne (jours)], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0
+		displayFolder: 2. Indicateurs 30 j
+		lineageTag: fb1baf73-c324-5a41-b7bf-5dbae4e2eddf
+
+	measure 'Anticipation moyenne (jours) 30 j préc.' =
+			VAR _fin = [Dernier jour complet] - 30
+			RETURN CALCULATE ( [Anticipation moyenne (jours)], DATESBETWEEN ( dim_date[date_day], _fin - 29, _fin ) )
+		formatString: 0.0
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: 54198631-2e48-537c-ac15-456d4cd211a6
+
+	measure 'Évol. Anticipation moyenne (jours) 30 j' = DIVIDE ( [Anticipation moyenne (jours) 30 j] - [Anticipation moyenne (jours) 30 j préc.], [Anticipation moyenne (jours) 30 j préc.] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Évolutions 30 j
+		lineageTag: d2dfaf5d-1685-58cc-b3ad-98c630dd55bd
+
+	measure 'Évol. Anticipation moyenne (jours) 30 j (texte)' =
+			VAR _evol = [Évol. Anticipation moyenne (jours) 30 j]
+			RETURN
+			    IF (
+			        ISBLANK ( _evol ),
+			        "Pas de période de comparaison",
+			        IF ( _evol >= 0, "▲ ", "▼ " ) & FORMAT ( ABS ( _evol ), "0.0 %" ) & " vs 30 j préc."
+			    )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 42fb23eb-f7b5-565f-91c5-31987a130ce8
+
+	measure 'Évol. Anticipation moyenne (jours) 30 j (couleur)' = IF ( ISBLANK ( [Évol. Anticipation moyenne (jours) 30 j] ), "#8589B3", "#5E4D76" )
+		isHidden
+		displayFolder: 9. Mise en forme
+		lineageTag: 3d5b85d9-fb6f-5f55-8471-cee090f1c2c4
+
+	partition Mesures = m
+		mode: import
+		source =
+				let
+				  Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"Colonne 1" = _t]),
+				    #"Colonnes supprimées" = Table.RemoveColumns(Source,{"Colonne 1"})
+				in
+				  #"Colonnes supprimées"
+
+	annotation PBI_ResultType = Table

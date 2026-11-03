@@ -9,7 +9,7 @@ Git diff like code.
 ## Connection
 
 - **Import** mode: Power BI loads the marts into its own engine at each
-  refresh (~2.6 M rows in the fact tables). DirectQuery would send
+  refresh (~340,000 tickets with the default 90 days of history). DirectQuery would send
   every visual's query to PostgreSQL, which is slower to use and adds load
   on the warehouse, for data that only changes once an hour.
 - Two Power Query **parameters**, `WarehouseServer` (e.g. `localhost:5432`)
@@ -95,6 +95,49 @@ Taux de remplissage = DIVIDE ( [Passagers-km], [Sièges-km] )
 
 The load factor only counts departed trips: a scheduled trip is still
 selling, its load factor is not final.
+
+## Report
+
+Three pages for business readers, plus a hidden **Contrôles** page with one
+card per documented measure (the check against SQL, below).
+
+| Page | KPI tiles | Visuals |
+|---|---|---|
+| Synthèse des ventes | CA net, billets vendus, prix moyen, taux d'annulation, part du CA en ligne, taux de remplissage | daily net revenue with a 7-day moving average; rankings by line, passenger type and fare type |
+| Exploitation et remplissage | taux de remplissage, trajets réalisés, trajets annulés, voyageurs par train, passagers-km | daily load factor; load factor by line; heat map line × departure hour |
+| Canaux et achats | part du CA en ligne, CA en ligne, billets par commande, anticipation | online share trend; revenue by channel; heat map day × purchase hour |
+
+**KPI tiles show the last 30 complete days, compared with the 30 days
+before.** The data is loaded every hour, so the current day and the current
+month are always incomplete: a "this month" figure would always look like a
+drop. `Dernier jour complet` is the day before the last sale; each KPI has
+three companion measures, generated from the same pattern:
+
+| Measure | Role |
+|---|---|
+| `<KPI> 30 j` | the KPI over the 30 complete days (`DATESBETWEEN` on `dim_date`) |
+| `<KPI> 30 j préc.` | the same KPI over the 30 days before |
+| `Évol. <KPI> 30 j` | relative change for amounts and counts; change in **points** for rates |
+| `(texte)`, `(couleur)` | hidden: the "▲ 4,2 % vs 30 j préc." label and its colour |
+
+The colour follows the business meaning, not the sign: more cancellations
+is red, fewer is green; the purchase lead time has no good direction and
+stays neutral.
+
+Display folders: `1. Ventes`, `2. Exploitation` (the documented measures
+and a few more), `2. Indicateurs 30 j`, `3. Évolutions 30 j`,
+`4. Contexte` (freshness and period labels), `5. Tendances` (daily series
+and 7-day moving averages), `9. Mise en forme` (hidden).
+
+**Display labels.** Three calculated columns translate codes for the
+reader: `fct_tickets[Type de voyageur]`, `fct_tickets[Type de tarif]` and
+`fct_trip_occupancy[Sens]`. They are presentation only: if another tool
+reads the marts one day, these labels belong in dbt.
+
+**Theme.** `StaticResources/RegisteredResources/RailTicketingTheme.json`:
+deep violet, an orange accent and Arial, inspired by a corporate template,
+without any logo. Each page says that the data is synthetic and the network
+fictional.
 
 ## Checking the numbers
 

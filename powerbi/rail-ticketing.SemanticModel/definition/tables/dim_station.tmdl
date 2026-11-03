@@ -1,0 +1,63 @@
+table dim_station
+	lineageTag: 1cbb23d5-351a-4788-ad7f-787cb1900c10
+
+	column station_id
+		dataType: int64
+		formatString: 0
+		lineageTag: dbca3dfe-e29f-4d4a-b580-b06352624ae5
+		summarizeBy: none
+		sourceColumn: station_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column station_code
+		dataType: string
+		lineageTag: a886e479-cb5a-4cac-984f-ed1a90cb0d6d
+		summarizeBy: none
+		sourceColumn: station_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column station_name
+		dataType: string
+		lineageTag: 019ff7c2-d65e-408f-a195-b6a7ac3cccbf
+		summarizeBy: none
+		sourceColumn: station_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: 6336ba2f-89c3-40eb-af79-dbaf9a1fc085
+		summarizeBy: none
+		sourceColumn: city
+
+		annotation SummarizationSetBy = Automatic
+
+	column province
+		dataType: string
+		lineageTag: d873a9e4-d805-4876-bf19-ea1de84d3e30
+		summarizeBy: none
+		sourceColumn: province
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_active
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 78b1f1fe-d3a0-4458-8e73-ed59826338ce
+		summarizeBy: none
+		sourceColumn: is_active
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_station = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database(WarehouseServer, WarehouseDatabase),
+				  #"Navigation 1" = Source{[Schema = "marts", Item = "dim_station"]}[Data]
+				in
+				  #"Navigation 1"
+
+	annotation PBI_ResultType = Table

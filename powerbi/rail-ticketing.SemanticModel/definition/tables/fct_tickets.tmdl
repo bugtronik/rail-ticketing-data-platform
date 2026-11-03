@@ -1,0 +1,297 @@
+table fct_tickets
+	lineageTag: cb3e4743-a798-4242-8982-d733b13b9002
+
+	column ticket_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 8c5e1e9f-d0c0-4084-aa23-5187d2d0f7d3
+		summarizeBy: none
+		sourceColumn: ticket_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 45ed095e-e18a-44bb-bc54-828ad2404b44
+		summarizeBy: none
+		sourceColumn: order_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column trip_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: ae88675b-9bc1-4a03-9bc8-da2a619f2fe2
+		summarizeBy: none
+		sourceColumn: trip_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column line_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 636a25c7-d1a7-4b05-88c7-a241b6696198
+		summarizeBy: none
+		sourceColumn: line_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column origin_station_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 7d0ee2c0-98de-463d-b077-a477df97119f
+		summarizeBy: none
+		sourceColumn: origin_station_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column destination_station_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: c89a9708-a6cf-40e0-8505-0f88a4d5a49d
+		summarizeBy: none
+		sourceColumn: destination_station_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 87bca083-7a71-437e-a319-18c472daf737
+		summarizeBy: none
+		sourceColumn: channel_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 9908b200-f329-4a24-88e4-1cfa1143b2b4
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_sk
+		dataType: string
+		isHidden
+		lineageTag: 4196b491-8823-4b12-ac78-574b837dffc5
+		summarizeBy: none
+		sourceColumn: customer_sk
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: d1e93fae-a882-4488-9224-50a0a77277ad
+		summarizeBy: none
+		sourceColumn: order_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column order_hour
+		dataType: int64
+		formatString: 0
+		lineageTag: 405c0f1e-4ce9-4534-84a5-e11c93236cfa
+		summarizeBy: none
+		sourceColumn: order_hour
+
+		annotation SummarizationSetBy = Automatic
+
+	column departure_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 0e002811-7330-4f9e-a112-0c99725d100e
+		summarizeBy: none
+		sourceColumn: departure_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column fare_class
+		dataType: string
+		lineageTag: 412cd1ca-a5c9-408b-b26c-a2b68ed2fb5a
+		summarizeBy: none
+		sourceColumn: fare_class
+
+		annotation SummarizationSetBy = Automatic
+
+	column fare_type
+		dataType: string
+		lineageTag: 7296fd05-73c0-48e9-b116-4681dc5755ff
+		summarizeBy: none
+		sourceColumn: fare_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column passenger_type
+		dataType: string
+		lineageTag: ebef032c-60fc-4a00-8a73-c1e98d0c9cf5
+		summarizeBy: none
+		sourceColumn: passenger_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column ticket_status
+		dataType: string
+		lineageTag: 3c9904f9-8ec0-4c7d-a9f7-3d7514fd50d8
+		summarizeBy: none
+		sourceColumn: ticket_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_paid
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 14c2a2e9-6942-4fe8-9e14-748d4886b325
+		summarizeBy: none
+		sourceColumn: is_paid
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_cancelled
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: ca926172-ad13-4bd1-9428-73070442cb49
+		summarizeBy: none
+		sourceColumn: is_cancelled
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_used
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: c7871db9-0f64-4c7d-8042-37ae2b3e83a1
+		summarizeBy: none
+		sourceColumn: is_used
+
+		annotation SummarizationSetBy = Automatic
+
+	column occupies_seat
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3980520a-4d72-47e4-a8e9-3bc001cfd610
+		summarizeBy: none
+		sourceColumn: occupies_seat
+
+		annotation SummarizationSetBy = Automatic
+
+	column ticket_price
+		dataType: double
+		lineageTag: 8e07ffed-582f-4562-abca-26ba3419cbea
+		summarizeBy: sum
+		sourceColumn: ticket_price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column sales_amount
+		dataType: double
+		lineageTag: 71798946-ec5e-475f-853c-cdc5b08bd11c
+		summarizeBy: sum
+		sourceColumn: sales_amount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column refunded_amount
+		dataType: double
+		lineageTag: d67c52e5-4b08-4cf9-ba3e-6c2088da74f8
+		summarizeBy: sum
+		sourceColumn: refunded_amount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column net_sales_amount
+		dataType: double
+		lineageTag: 109dfa16-7959-4998-b40b-532804d3fbf7
+		summarizeBy: sum
+		sourceColumn: net_sales_amount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column distance_km
+		dataType: double
+		lineageTag: 2fc4a679-22ed-4c60-8ad8-67aba3920fb9
+		summarizeBy: sum
+		sourceColumn: distance_km
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column passenger_km
+		dataType: double
+		lineageTag: 92d81bcd-4ef6-4d4c-a836-239048fe9eca
+		summarizeBy: sum
+		sourceColumn: passenger_km
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column _loaded_at
+		dataType: dateTime
+		isHidden
+		formatString: General Date
+		lineageTag: 9289ee7e-6553-418d-8b09-79eb8fbf23d4
+		summarizeBy: none
+		sourceColumn: _loaded_at
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Libellé français de passenger_type, pour l'affichage.
+	column 'Type de voyageur' = SWITCH ( fct_tickets[passenger_type], "ADULT", "Adulte", "CHILD", "Enfant", "YOUTH", "Jeune", "SENIOR", "Senior", fct_tickets[passenger_type] )
+		dataType: string
+		lineageTag: 2580a290-78f9-4bce-8d22-d4f583afb2d0
+		summarizeBy: none
+
+	/// Libellé français de fare_type, pour l'affichage.
+	column 'Type de tarif' = SWITCH ( fct_tickets[fare_type], "FLEX", "Flexible", "STANDARD", "Standard", "SAVER", "Économique", fct_tickets[fare_type] )
+		dataType: string
+		lineageTag: fc5ab19a-76d5-49e8-89b6-84f2336531d2
+		summarizeBy: none
+
+	partition fct_tickets = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database(WarehouseServer, WarehouseDatabase),
+				  #"Navigation 1" = Source{[Schema = "marts", Item = "fct_tickets"]}[Data]
+				in
+				  #"Navigation 1"
+
+	annotation PBI_ResultType = Table

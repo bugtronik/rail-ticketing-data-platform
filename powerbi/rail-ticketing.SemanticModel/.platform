@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "rail-ticketing"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "7449026c-0170-4b8e-af05-d309db019b1b"
+  }
+}

@@ -1,0 +1,13 @@
+expression WarehouseServer = "localhost:5432" meta [IsParameterQuery = true, IsParameterQueryRequired = false, Type = type text]
+	lineageTag: 14e8a368-c139-4530-aca0-e8a48d89968d
+
+	annotation PBI_ResultType = Text
+
+expression WarehouseDatabase =
+		let
+		    Source = "warehouse" meta [IsParameterQuery = true, IsParameterQueryRequired = false, Type = type text]
+		in
+		    Source
+	lineageTag: 4ff37774-7794-41d3-aec4-e3f0b1ab0e5f
+
+	annotation PBI_ResultType = Text

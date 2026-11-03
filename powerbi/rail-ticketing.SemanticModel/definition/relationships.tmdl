@@ -1,0 +1,41 @@
+relationship 65b4ca6b-0676-edce-3554-399a24df7dd1
+	fromColumn: fct_tickets.order_date
+	toColumn: dim_date.date_day
+
+relationship 9d35444c-8612-6ff5-d30b-18e698c7281e
+	isActive: false
+	fromColumn: fct_tickets.departure_date
+	toColumn: dim_date.date_day
+
+relationship 8f97f9f0-a3cc-47ce-110e-daf52c134108
+	fromColumn: fct_tickets.origin_station_id
+	toColumn: dim_station.station_id
+
+relationship 66ad840c-7afe-b334-87be-2f25a9c1606b
+	isActive: false
+	fromColumn: fct_tickets.destination_station_id
+	toColumn: dim_station.station_id
+
+relationship 7216124d-2783-d5f6-5a36-581aa45e817e
+	fromColumn: fct_tickets.line_id
+	toColumn: dim_line.line_id
+
+relationship 10adc51b-ccdc-a22b-277f-00c7c8ef232a
+	fromColumn: fct_tickets.channel_id
+	toColumn: dim_channel.channel_id
+
+relationship cea6747c-b64a-954a-cc98-538184f5a304
+	fromColumn: fct_tickets.customer_sk
+	toColumn: dim_customer.customer_sk
+
+relationship 403a058d-20ea-b69d-50c2-2d1706707c0b
+	fromColumn: fct_tickets.trip_id
+	toColumn: dim_trip.trip_id
+
+relationship cee6a976-bf45-2cc6-553a-7f2883e8ca1d
+	fromColumn: fct_trip_occupancy.departure_date
+	toColumn: dim_date.date_day
+
+relationship ebb4871d-28d6-cacf-a345-c415eed4edef
+	fromColumn: fct_trip_occupancy.line_id
+	toColumn: dim_line.line_id

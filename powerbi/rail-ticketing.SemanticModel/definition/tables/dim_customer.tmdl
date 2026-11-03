@@ -1,0 +1,101 @@
+table dim_customer
+	lineageTag: ad601aa2-ecd2-4acd-9efa-6b3dbbff4623
+
+	column customer_sk
+		dataType: string
+		lineageTag: fb809453-29f0-403f-b063-4c204009746a
+		summarizeBy: none
+		sourceColumn: customer_sk
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 3588458c-65a9-4414-8219-85e5479e900d
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column version_number
+		dataType: int64
+		formatString: 0
+		lineageTag: 834e2032-d825-4690-a353-5ac19b87b9ac
+		summarizeBy: none
+		sourceColumn: version_number
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: 83d92680-b262-423b-be61-7aecdb654a5c
+		summarizeBy: none
+		sourceColumn: city
+
+		annotation SummarizationSetBy = Automatic
+
+	column loyalty_tier
+		dataType: string
+		lineageTag: 07a0f8f0-99da-4576-9a3b-662774c84f0b
+		summarizeBy: none
+		sourceColumn: loyalty_tier
+
+		annotation SummarizationSetBy = Automatic
+
+	column age_band
+		dataType: string
+		lineageTag: d589cc78-ffab-4e97-a49b-a2ee1d6de71e
+		summarizeBy: none
+		sourceColumn: age_band
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_since
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: e69d2f78-545a-4dd6-94ba-32fe354412e7
+		summarizeBy: none
+		sourceColumn: customer_since
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column valid_from
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: e9d22940-3e84-4bd5-84b4-b75316072c8c
+		summarizeBy: none
+		sourceColumn: valid_from
+
+		annotation SummarizationSetBy = Automatic
+
+	column valid_to
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: fe01d1e2-1119-4d62-b5f6-297a2a3f9f2b
+		summarizeBy: none
+		sourceColumn: valid_to
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_current
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 4524b620-901b-494f-8161-ac7062445ac2
+		summarizeBy: none
+		sourceColumn: is_current
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_customer = m
+		mode: import
+		source =
+				let
+				  Source = PostgreSQL.Database(WarehouseServer, WarehouseDatabase),
+				  #"Navigation 1" = Source{[Schema = "marts", Item = "dim_customer"]}[Data]
+				in
+				  #"Navigation 1"
+
+	annotation PBI_ResultType = Table
