@@ -21,7 +21,7 @@ re-run safely, which `make migrate-warehouse` also runs on existing
 warehouses. Checked: `bi_reader` reads the 8 marts tables, and is refused
 on `raw`, `staging`, `snapshots` and on any `CREATE`.
 
-**Import mode, not DirectQuery.** 2.6 M rows fit easily in Power BI's
+**Import mode, not DirectQuery.** A few hundred thousand rows fit easily in Power BI's
 engine, the data changes once an hour, and every visual then answers from
 memory instead of sending a query to PostgreSQL.
 

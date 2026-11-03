@@ -174,18 +174,25 @@ project in [`powerbi/`](powerbi/), where the model and every DAX measure are
 documented; each card's value is checked against a SQL query
 ([`dashboard_checks.sql`](transform/analyses/dashboard_checks.sql)).
 
-**Sales**, by date of sale: revenue by line and month, average ticket
-price, cancellations and refunds.
+Each page opens on KPI tiles over the **last 30 complete days**, with the
+change versus the 30 days before (green or red by business meaning, not by
+sign: more cancellations is red).
+
+**Sales summary**: net revenue, tickets, average price, cancellation rate,
+online share; daily revenue with a 7-day moving average; rankings by line,
+passenger type and fare type.
 
 ![Power BI: sales page](docs/images/dashboard-sales.png)
 
-**Load factor**: passenger-km over seat-km on departed trips, by line and
-month (a ratio of sums, computed by DAX in each visual).
+**Operations and load factor**: passenger-km over seat-km on departed
+trips (a ratio of sums, computed by DAX in each visual), trips run and
+cancelled, and a heat map of the load factor by line and departure hour.
 
 ![Power BI: load factor page](docs/images/dashboard-load-factor.png)
 
-**Channels and peak hours**: share of each sales channel and of online
-sales over time, purchases by hour, departures by hour.
+**Channels and buying behaviour**: online share, revenue by channel,
+tickets per order, purchase lead time, and a heat map of sales by day and
+hour of purchase.
 
 ![Power BI: channels and peak hours page](docs/images/dashboard-channels.png)
 
