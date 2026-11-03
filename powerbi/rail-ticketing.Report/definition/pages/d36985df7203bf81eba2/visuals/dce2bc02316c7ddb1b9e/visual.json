@@ -220,7 +220,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Courbe fine : CA net du jour · courbe épaisse : moyenne mobile sur 7 jours, qui lisse les variations de la semaine · XAF'"
+                  "Value": "'60 derniers jours complets · courbe fine : CA net du jour · courbe épaisse : moyenne mobile sur 7 jours, qui lisse les variations de la semaine · XAF'"
                 }
               }
             },

@@ -13,6 +13,26 @@
     "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_tickets"
+                    }
+                  },
+                  "Property": "Type de voyageur"
+                }
+              },
+              "queryRef": "fct_tickets.Type de voyageur",
+              "nativeQueryRef": "Type de voyageur",
+              "active": true,
+              "displayName": "Type de voyageur"
+            }
+          ]
+        },
         "Y": {
           "projections": [
             {

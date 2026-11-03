@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
   "name": "5405b9d8add80e9b73e8",
   "position": {
-    "x": 863.64089775561092,
-    "y": 254.96259351620947,
+    "x": 863.70820668693011,
+    "y": 259.69604863221883,
     "z": 22000,
-    "height": 228.0299251870324,
-    "width": 400.39900249376558,
+    "height": 228.57142857142858,
+    "width": 400.72948328267478,
     "tabOrder": 22000
   },
   "visual": {
@@ -227,5 +227,37 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "dadf4c0964d8c804b9dd",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dim_line"
+              }
+            },
+            "Property": "line_name"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "7ee9533146b1bcc36a65",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Mesures"
+              }
+            },
+            "Property": "Taux de remplissage 30 j"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

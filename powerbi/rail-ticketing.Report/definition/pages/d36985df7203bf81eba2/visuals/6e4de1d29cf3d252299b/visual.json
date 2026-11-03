@@ -13,6 +13,26 @@
     "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_tickets"
+                    }
+                  },
+                  "Property": "Type de tarif"
+                }
+              },
+              "queryRef": "fct_tickets.Type de tarif",
+              "nativeQueryRef": "Type de tarif",
+              "active": true,
+              "displayName": "Type de tarif"
+            }
+          ]
+        },
         "Y": {
           "projections": [
             {

@@ -21,10 +21,10 @@
                   {
                     "value": "Canaux et comportements d'achat",
                     "textStyle": {
+                      "fontWeight": "bold",
                       "fontFamily": "Arial",
                       "fontSize": "18pt",
-                      "fontWeight": "bold",
-                      "color": "#FFFFFF"
+                      "color": "#ffffff"
                     }
                   }
                 ]
@@ -36,7 +36,7 @@
                     "textStyle": {
                       "fontFamily": "Arial",
                       "fontSize": "10pt",
-                      "color": "#C9C3DA"
+                      "color": "#c9c3da"
                     }
                   }
                 ]

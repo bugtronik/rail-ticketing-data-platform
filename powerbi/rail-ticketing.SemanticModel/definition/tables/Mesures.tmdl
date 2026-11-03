@@ -147,16 +147,21 @@ table Mesures
 		displayFolder: 4. Contexte
 		lineageTag: f2c5adb9-011d-5d5e-8ab8-47f438f40386
 
-	measure 'CA net quotidien' = IF ( MAX ( dim_date[date_day] ) <= [Dernier jour complet], [CA net] )
+	/// CA net du jour, sur les 60 derniers jours complets.
+	measure 'CA net quotidien' =
+			VAR _jour = MAX ( dim_date[date_day] )
+			VAR _fin = [Dernier jour complet]
+			RETURN IF ( _jour <= _fin && _jour > _fin - 60, [CA net] )
 		formatString: #,0
 		displayFolder: 5. Tendances
 		lineageTag: 7086e821-cd2f-5a2e-90c3-03b81edfb72e
 
 	measure 'CA net moyenne mobile 7 j' =
 			VAR _jour = MAX ( dim_date[date_day] )
+			VAR _fin = [Dernier jour complet]
 			RETURN
 			    IF (
-			        _jour <= [Dernier jour complet],
+			        _jour <= _fin && _jour > _fin - 60,
 			        AVERAGEX ( DATESINPERIOD ( dim_date[date_day], _jour, -7, DAY ), [CA net] )
 			    )
 		formatString: #,0
@@ -165,9 +170,10 @@ table Mesures
 
 	measure 'Taux de remplissage moyenne mobile 7 j' =
 			VAR _jour = MAX ( dim_date[date_day] )
+			VAR _fin = [Dernier jour complet]
 			RETURN
 			    IF (
-			        _jour <= [Dernier jour complet],
+			        _jour <= _fin && _jour > _fin - 60,
 			        CALCULATE ( [Taux de remplissage], DATESINPERIOD ( dim_date[date_day], _jour, -7, DAY ) )
 			    )
 		formatString: 0.0%
@@ -176,9 +182,10 @@ table Mesures
 
 	measure 'Part du CA en ligne moyenne mobile 7 j' =
 			VAR _jour = MAX ( dim_date[date_day] )
+			VAR _fin = [Dernier jour complet]
 			RETURN
 			    IF (
-			        _jour <= [Dernier jour complet],
+			        _jour <= _fin && _jour > _fin - 60,
 			        CALCULATE ( [Part du CA en ligne], DATESINPERIOD ( dim_date[date_day], _jour, -7, DAY ) )
 			    )
 		formatString: 0.0%
@@ -692,6 +699,15 @@ table Mesures
 		isHidden
 		displayFolder: 9. Mise en forme
 		lineageTag: 3d5b85d9-fb6f-5f55-8471-cee090f1c2c4
+
+	/// Taux de remplissage du jour, sur les 60 derniers jours complets.
+	measure 'Taux de remplissage quotidien' =
+			VAR _jour = MAX ( dim_date[date_day] )
+			VAR _fin = [Dernier jour complet]
+			RETURN IF ( _jour <= _fin && _jour > _fin - 60, [Taux de remplissage] )
+		formatString: 0.0%
+		displayFolder: 5. Tendances
+		lineageTag: 4fa0cf54-9af3-460a-844c-fdf11bf26cac
 
 	partition Mesures = m
 		mode: import

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
   "name": "b6f6aa43efbf02114371",
   "position": {
-    "x": 247.78054862842893,
-    "y": 79.9002493765586,
+    "x": 248.0243161094225,
+    "y": 84.620060790273556,
     "z": 4000,
-    "height": 56.558603491271818,
-    "width": 219.95012468827929,
+    "height": 56.413373860182375,
+    "width": 219.81762917933131,
     "tabOrder": 4000
   },
   "visual": {
@@ -20,15 +20,16 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "dim_line"
+                      "Entity": "fct_trip_occupancy"
                     }
                   },
-                  "Property": "service_type"
+                  "Property": "Sens"
                 }
               },
-              "queryRef": "dim_line.service_type",
-              "nativeQueryRef": "service_type",
-              "active": true
+              "queryRef": "fct_trip_occupancy.Sens",
+              "nativeQueryRef": "Sens",
+              "active": true,
+              "displayName": "Sens"
             }
           ]
         }
@@ -59,11 +60,6 @@
               }
             }
           }
-        }
-      ],
-      "general": [
-        {
-          "properties": {}
         }
       ]
     },
@@ -135,5 +131,23 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "27edc25d2b20087312b3",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "fct_trip_occupancy"
+              }
+            },
+            "Property": "Sens"
+          }
+        },
+        "type": "Categorical"
+      }
+    ]
   }
 }

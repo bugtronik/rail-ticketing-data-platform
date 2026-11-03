@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
   "name": "d44c321a24293efb37b5",
   "position": {
-    "x": 268,
-    "y": 150.95511233624762,
+    "x": 268.44984802431611,
+    "y": 150.75987841945289,
     "z": 10000,
-    "height": 70,
-    "width": 240,
+    "height": 70.030395136778125,
+    "width": 239.27051671732525,
     "tabOrder": 10000
   },
   "visual": {
@@ -67,6 +67,13 @@
               "expr": {
                 "Literal": {
                   "Value": "true"
+                }
+              }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
                 }
               }
             }
@@ -194,5 +201,23 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "d42b8171d795bc7a79d9",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Mesures"
+              }
+            },
+            "Property": "Trajets réalisés 30 j"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

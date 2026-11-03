@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
   "name": "d7086a30452651e33325",
   "position": {
-    "x": 772,
-    "y": 150.95511233624762,
+    "x": 772.27963525835867,
+    "y": 151.73252279635258,
     "z": 16000,
-    "height": 70,
-    "width": 240,
+    "height": 70.030395136778125,
+    "width": 239.27051671732525,
     "tabOrder": 16000
   },
   "visual": {
@@ -67,6 +67,13 @@
               "expr": {
                 "Literal": {
                   "Value": "true"
+                }
+              }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
                 }
               }
             }
@@ -194,5 +201,23 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "e2d5e601e2da408d33c2",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Mesures"
+              }
+            },
+            "Property": "Voyageurs moyens par train 30 j"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

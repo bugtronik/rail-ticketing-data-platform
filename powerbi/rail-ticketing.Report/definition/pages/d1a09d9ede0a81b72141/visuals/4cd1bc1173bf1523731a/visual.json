@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
   "name": "4cd1bc1173bf1523731a",
   "position": {
-    "x": 16.159600997506235,
-    "y": 254.96259351620947,
+    "x": 15.562310030395137,
+    "y": 263.58662613981767,
     "z": 21000,
-    "height": 226.23441396508727,
-    "width": 835.81047381546136,
+    "height": 225.6534954407295,
+    "width": 836.47416413373867,
     "tabOrder": 21000
   },
   "visual": {
@@ -43,10 +43,10 @@
                       "Entity": "Mesures"
                     }
                   },
-                  "Property": "Taux de remplissage"
+                  "Property": "Taux de remplissage quotidien"
                 }
               },
-              "queryRef": "Mesures.Taux de remplissage",
+              "queryRef": "Mesures.Taux de remplissage quotidien",
               "nativeQueryRef": "Remplissage du jour",
               "displayName": "Remplissage du jour"
             },
@@ -117,7 +117,7 @@
             }
           },
           "selector": {
-            "metadata": "Mesures.Taux de remplissage"
+            "metadata": "Mesures.Taux de remplissage quotidien"
           }
         },
         {
@@ -220,7 +220,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Passagers-km / sièges-km des trajets réalisés · courbe épaisse : moyenne mobile 7 jours'"
+                  "Value": "'60 derniers jours complets · passagers-km / sièges-km des trajets réalisés · courbe épaisse : moyenne mobile 7 jours'"
                 }
               }
             },
@@ -288,5 +288,51 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "8ef5d3233087c73b20ea",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dim_date"
+              }
+            },
+            "Property": "date_day"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "4df62b20a903956106ca",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Mesures"
+              }
+            },
+            "Property": "Taux de remplissage quotidien"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "6ea5588550ee9508797e",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Mesures"
+              }
+            },
+            "Property": "Taux de remplissage moyenne mobile 7 j"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

@@ -320,19 +320,7 @@ cultureInfo fr-FR
 			          "ConceptualProperty": "Taux de remplissage"
 			        }
 			      },
-			      "State": "Generated",
-			      "Terms": [
-			        {
-			          "Remplissage du jour": {
-			            "State": "Suggested",
-			            "Source": {
-			              "Type": "External",
-			              "Agent": "PowerBI.VisualColumnRename"
-			            },
-			            "Weight": 0.9
-			          }
-			        }
-			      ]
+			      "State": "Generated"
 			    },
 			    "mesures.taux_de_remplissage_moyenne_mobile_7_j": {
 			      "Definition": {
@@ -618,6 +606,27 @@ cultureInfo fr-FR
 			      "Terms": [
 			        {
 			          "Heure de départ": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "mesures.taux_de_remplissage_quotidien": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Mesures",
+			          "ConceptualProperty": "Taux de remplissage quotidien"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Remplissage du jour": {
 			            "State": "Suggested",
 			            "Source": {
 			              "Type": "External",

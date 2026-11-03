@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
   "name": "96820d64e3c83760453a",
   "position": {
-    "x": 16.384039899780422,
-    "y": 252.16708229415775,
+    "x": 16,
+    "y": 244,
     "z": 18000,
     "height": 226,
     "width": 618,
@@ -173,7 +173,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Site web et application mobile · moyenne mobile 7 jours'"
+                  "Value": "'60 derniers jours complets · site web et application mobile · moyenne mobile 7 jours'"
                 }
               }
             },
