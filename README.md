@@ -386,6 +386,70 @@ erDiagram
     payments ||--o{ refunds : "credited to"
 ```
 
+## What I learned, limitations and next steps
+
+### What I learned
+
+Most of these lessons came from something that broke, and each fix is
+covered by a test, a check or a line of documentation.
+
+- **Reading tables one by one is not a snapshot.** With live writes, an
+  order read before its tickets left 15 orphan tickets; the CI caught it.
+  Tables are now read children first, and a test checks that order against
+  the source's foreign keys ([ADR 0005](docs/adr/0005-incremental-extraction-design.md)).
+- **`except Exception` does not catch Ctrl+C.** Interrupting a load
+  committed half a batch; the extractor now catches `BaseException` and
+  rolls back, and a test interrupts a batch on purpose.
+- **Statistics before indexes.** A model took 109 s instead of 16 s because
+  PostgreSQL had never analysed freshly loaded tables: autovacuum had not
+  run yet. The extractor and dbt now run `ANALYZE` after writing. Measuring
+  first showed that most of the "incremental" speed-up came from there.
+- **Containers have their own limits.** `dbt build` failed with "No space
+  left on device": Docker gives `/dev/shm` 64 MB, too little for
+  PostgreSQL's parallel joins (`shm_size: 256mb`). Power BI loads tables in
+  parallel and hit a 5-connection limit chosen too low (now 20, on purpose).
+- **Reproducibility is proven on another machine.** Installing on a second
+  laptop surfaced a wrong start-up time, a manual secrets step and several
+  WSL pitfalls: hence `make env`, the measured durations and the
+  troubleshooting table.
+- **A number is not a finding.** The dashboard showed a 12 % drop; two
+  analyses showed it was the seasonality built into the generator, before
+  anyone presented it as a trend.
+- **In a Power BI project, the model comes before the report.** A visual
+  that refers to a column that does not exist yet loses that field when the
+  file is opened.
+
+### Limitations
+
+- **Synthetic data.** Realistic patterns, but designed: nothing here
+  describes a real operator.
+- **The live generator runs only while the laptop does,** and is not
+  calibrated on the history's demand model: it applies the hour profiles
+  but not the month and weekday factors (3 Nov: 1,926 orders in 7 hours,
+  against about 1,850 for a full day in October). The 30-day indicators
+  mix both once live days accumulate.
+- **Watermark extraction:** a transaction committed more than 10 minutes
+  after its `updated_at` is missed (tested), physical deletes are
+  invisible, and only the last version of a row between two runs is seen.
+- **One machine:** no high availability, secrets in a local `.env` file,
+  failures visible in the Airflow UI but not sent anywhere.
+- **Power BI Desktop only:** no gateway, no scheduled refresh, no
+  row-level security.
+
+### Next steps
+
+1. **Change data capture** from the MariaDB binary log, as designed in
+   [ADR 0010](docs/adr/0010-change-data-capture-design.md): freshness in
+   seconds, deletes and intermediate statuses captured.
+2. **Alerting:** a failure callback and a freshness check that notify a
+   channel, instead of waiting for someone to open Airflow.
+3. **A live generator that follows the same demand model** as the history,
+   so that live days are comparable with history days.
+4. **Power BI Service:** a gateway, a scheduled refresh after each pipeline
+   run, and row-level security by line.
+5. **Display labels in dbt** (passenger and fare types, direction), now
+   that more than one consumer could read the marts.
+
 ## License
 
 [MIT](LICENSE)
