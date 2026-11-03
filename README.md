@@ -68,6 +68,7 @@ Each significant choice is recorded as an Architecture Decision Record:
 - [ADR 0007 — Orchestration: Airflow 3 calls the project's command-line tools](docs/adr/0007-airflow-orchestration.md)
 - [ADR 0008 — Incremental fact table and customer history (SCD type 2)](docs/adr/0008-incremental-models-and-customer-history.md)
 - [ADR 0009 — Power BI on the marts: read-only account, import mode, ratios in DAX](docs/adr/0009-power-bi-layer.md)
+- [ADR 0010 — Change data capture: the design of the next step (not built)](docs/adr/0010-change-data-capture-design.md)
 
 ## Getting started
 
